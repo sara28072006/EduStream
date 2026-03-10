@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Odtwarzacz Podcastów i EduTalks</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        :root {
+            /* Akcenty stałe (w obu motywach) */
+            --accent-color: #f59e0b; /* Pomarańczowy dla podcastów */
+            --accent-hover: #fbbf24;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #a855f7); 
+            --success-green: #34C759;
+            --pdf-red: #ef4444;
+
+            /* Zmienne dla motywu CIEMNEGO (Domyślne) */
+            --bg-dark: #0f1115; 
+            --bg-panel: #1a1c23;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-hover: rgba(255, 255, 255, 0.1);
+            --nav-bg-1: rgba(15,17,21,0.95);
+            --nav-bg-2: rgba(15,17,21,0.2);
+            --shadow-strong: rgba(0,0,0,0.8);
+            --sidebar-bg: rgba(15, 15, 15, 0.95);
+            --text-host: #ffffff;
+            --text-guest: #fde68a; /* Jasny złoty */
+            --input-bg: rgba(255,255,255,0.05);
+        }
+
+        /* Zmienne dla motywu JASNEGO (Apple Style) */
+        html[data-theme="light"] {
+            --bg-dark: #f5f5f7; /* Chłodny, jasny szary z Apple */
+            --bg-panel: #ffffff;
+            --text-main: #1d1d1f; /* Ciemny grafitowy tekst Apple */
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(0, 0, 0, 0.04);
+            --glass-hover: rgba(0, 0, 0, 0.08);
+            --nav-bg-1: rgba(245,245,247,0.95);
+            --nav-bg-2: rgba(245,245,247,0.2);
+            --shadow-strong: rgba(0,0,0,0.15);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --text-host: #1d1d1f;
+            --text-guest: #d97706; /* Ciemniejszy pomarańcz dla kontrastu na białym */
+            --input-bg: rgba(0,0,0,0.03);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.2; animation: float 20s infinite ease-in-out alternate; transition: background 0.5s ease;}
+        /* Kolory kulek dla motywu ciemnego */
+        .blob-1 { width: 600px; height: 600px; background: #7c2d12; top: -10%; left: -10%; }
+        .blob-2 { width: 500px; height: 500px; background: #9a3412; bottom: -20%; right: -10%; animation-delay: -10s; }
+        /* Kolory kulek dla motywu jasnego (chłodne, neutralne pastelowe tonacje) */
+        html[data-theme="light"] .blob-1 { background: #e0f2fe; } 
+        html[data-theme="light"] .blob-2 { background: #f3e8ff; } 
+        
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%; height: 70px; padding: 0 40px; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            background: linear-gradient(to bottom, var(--nav-bg-1) 0%, var(--nav-bg-2) 100%);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .nav-left { display: flex; align-items: center; flex-shrink: 0; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); transition: 0.4s; }
+        html[data-theme="light"] .logo-img { filter: drop-shadow(0 2px 10px rgba(0,0,0,0.1)) invert(1) hue-rotate(180deg); }
+
+        .search-container { flex-grow: 1; display: flex; justify-content: center; padding: 0 30px; }
+        .search-bar { 
+            background: var(--input-bg); border: 1px solid var(--glass-border); 
+            border-radius: 24px; padding: 10px 20px; display: flex; align-items: center; gap: 12px; 
+            width: 100%; max-width: 600px; transition: 0.3s; 
+        }
+        .search-bar:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); background: var(--glass-bg);}
+        .search-bar input { background: transparent; border: none; color: var(--text-main); outline: none; width: 100%; font-family: inherit; font-size: 14px; }
+        .search-bar input::placeholder { color: var(--text-muted); }
+
+        .nav-right { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        
+        .theme-toggle-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-muted); width: 38px; height: 38px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;
+        }
+        .theme-toggle-btn:hover { color: var(--accent-color); background: var(--glass-hover); border-color: var(--accent-color); }
+        .theme-toggle-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .back-to-hub-btn {
+            display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none;
+            font-size: 13px; font-weight: 600; padding: 8px 16px; border-radius: 20px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); transition: 0.3s; white-space: nowrap;
+        }
+        .back-to-hub-btn:hover { background: rgba(255, 59, 48, 0.15); color: #ff6b6b; border-color: rgba(255, 59, 48, 0.3); }
+        .user-profile-link {
+            display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main);
+            padding: 4px 12px 4px 4px; border-radius: 30px; transition: 0.3s; background: var(--glass-bg); border: 1px solid var(--glass-border); white-space: nowrap;
+        }
+        .user-profile-link:hover { background: var(--glass-hover); }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+
+        /* --- GŁÓWNY KONTENER PODCASTU --- */
+        .podcast-layout {
+            display: flex; max-width: 1400px; margin: 40px auto; padding: 0 40px; gap: 40px; flex-grow: 1; width: 100%;
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        body.panel-is-open .podcast-layout { max-width: 1000px; margin-left: 50px; }
+
+        /* LEWA STRONA: ODTWARZACZ I COVER */
+        .podcast-player-section { flex: 1; display: flex; flex-direction: column; align-items: center; max-width: 500px;}
+        
+        /* MULTIMEDIA CONTAINER */
+        .media-container {
+            position: relative; width: 100%; aspect-ratio: 1/1; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 20px 50px var(--shadow-strong); margin-bottom: 30px; border: 1px solid var(--glass-border);
+            transition: aspect-ratio 0.4s cubic-bezier(0.16, 1, 0.3, 1); background: #000;
+        }
+        .media-container.video-mode { aspect-ratio: 16/9; }
+        
+        .edutalks-badge {
+            position: absolute; top: 15px; left: 15px; background: var(--gradient-accent); color: white;
+            font-size: 11px; font-weight: 800; padding: 6px 12px; border-radius: 8px; text-transform: uppercase;
+            z-index: 20; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4); letter-spacing: 0.5px;
+        }
+
+        .podcast-cover { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
+        .podcast-video { width: 100%; height: 100%; object-fit: cover; display: none; }
+        
+        .media-container.video-mode .podcast-cover { display: none; }
+        .media-container.video-mode .podcast-video { display: block; }
+
+        .mode-toggle-btn {
+            position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+            color: white; border: 1px solid rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 20px;
+            font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: 0.3s; z-index: 10;
+        }
+        .mode-toggle-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); border-color: white;}
+
+        .podcast-info { text-align: center; margin-bottom: 30px; width: 100%;}
+        .podcast-title { font-size: 24px; font-weight: 800; margin-bottom: 10px; line-height: 1.3;}
+        .podcast-author { font-size: 16px; color: var(--accent-color); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .podcast-author svg { width: 16px; height: 16px; }
+
+        /* KONTROLKI AUDIO (Spotify Style) */
+        .audio-controls { width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        
+        .progress-bar { width: 100%; height: 6px; background: var(--glass-border); border-radius: 3px; cursor: pointer; position: relative; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 35%; background: var(--gradient-accent); border-radius: 3px; }
+        .progress-thumb { position: absolute; right: -6px; top: 50%; transform: translateY(-50%) scale(0); width: 12px; height: 12px; background: var(--text-main); border-radius: 50%; transition: 0.2s; box-shadow: 0 0 10px rgba(0,0,0,0.2);}
+        .progress-bar:hover .progress-thumb { transform: translateY(-50%) scale(1); }
+        
+        .time-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; font-weight: 500;}
+
+        .main-buttons { display: flex; justify-content: center; align-items: center; gap: 20px; margin-top: 10px; }
+        .btn-circle { background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; padding: 5px; }
+        .btn-circle:hover { color: var(--text-main); transform: scale(1.1); }
+        .btn-circle svg { width: 24px; height: 24px; fill: currentColor; }
+        
+        .play-btn { width: 64px; height: 64px; background: var(--text-main); color: var(--bg-panel); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; border: none; margin: 0 10px; box-shadow: 0 5px 15px var(--shadow-strong);}
+        .play-btn:hover { transform: scale(1.05); }
+        .play-btn svg { width: 32px; height: 32px; fill: currentColor; margin-left: 4px;}
+
+        .speed-btn { font-size: 14px; font-weight: 700; color: var(--text-muted); background: transparent; border: 1px solid var(--glass-border); border-radius: 12px; padding: 4px 10px; cursor: pointer; transition: 0.2s; }
+        .speed-btn:hover { color: var(--text-main); border-color: var(--text-muted); }
+
+        /* --- PRAWA STRONA: TRANSKRYPCJA, OPIS, Q&A --- */
+        .podcast-content-section { flex: 1; display: flex; flex-direction: column; background: var(--bg-panel); border-radius: 24px; border: 1px solid var(--glass-border); overflow: hidden; box-shadow: 0 10px 30px var(--shadow-strong);}
+        
+        .content-tabs { display: flex; border-bottom: 1px solid var(--glass-border); background: var(--glass-bg); overflow-x: auto; scrollbar-width: none;}
+        .content-tabs::-webkit-scrollbar { display: none; }
+        .c-tab { flex: 1; padding: 20px 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: transparent; transition: 0.3s; position: relative; white-space: nowrap;}
+        .c-tab:hover { color: var(--text-main); background: var(--glass-hover);}
+        .c-tab.active { color: var(--text-main); }
+        .c-tab.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px; background: var(--accent-color); }
+
+        .tab-body { padding: 30px; overflow-y: auto; flex-grow: 1; display: none; animation: fadeIn 0.3s ease;}
+        .tab-body.active { display: block; }
+
+        /* 1. Styl Transkrypcji (Lyrics Style z podziałem ról) */
+        .transcript-line { margin-bottom: 25px; line-height: 1.4; transition: 0.3s; cursor: pointer; opacity: 0.4; }
+        .transcript-line:hover { opacity: 0.7; }
+        .transcript-line.active { opacity: 1; transform: scale(1.02); transform-origin: left; }
+        
+        .t-time { display: inline-block; font-size: 12px; font-weight: 600; color: var(--accent-color); margin-bottom: 5px; opacity: 0; transition: 0.3s;}
+        .transcript-line.active .t-time { opacity: 1; }
+        
+        .speaker-label { display: block; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .speaker-host { color: var(--text-muted); }
+        .speaker-guest { color: var(--accent-color); }
+        
+        .text-host { font-size: 20px; font-weight: 700; color: var(--text-host); transition: 0.3s;}
+        .text-guest { font-size: 20px; font-weight: 700; color: var(--text-guest); transition: 0.3s;}
+        .transcript-line.active .text-host, .transcript-line.active .text-guest { font-size: 24px; text-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+
+        /* 2. Styl Opisu i Materiałów Dodatkowych (PDF) */
+        .description-text { font-size: 15px; color: var(--text-main); opacity: 0.85; line-height: 1.7; margin-bottom: 30px;}
+        .podcast-tags { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
+        .p-tag { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 6px 12px; border-radius: 15px; font-size: 12px; font-weight: 600; color: var(--accent-color);}
+
+        /* Karty PDF */
+        .materials-section { margin-top: 30px; border-top: 1px solid var(--glass-border); padding-top: 20px;}
+        .materials-title { font-size: 15px; font-weight: 700; margin-bottom: 15px; color: var(--text-main);}
+        .pdf-card { 
+            display: flex; align-items: center; gap: 15px; background: var(--glass-bg); 
+            border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; 
+            text-decoration: none; color: var(--text-main); transition: 0.3s; margin-bottom: 10px; cursor: pointer;
+        }
+        .pdf-card:hover { background: var(--glass-hover); border-color: var(--accent-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.1);}
+        .pdf-icon { background: var(--pdf-red); color: white; font-size: 11px; font-weight: 800; padding: 6px 10px; border-radius: 8px;}
+        .pdf-info { display: flex; flex-direction: column; flex-grow: 1; }
+        .pdf-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+        .pdf-size { font-size: 11px; color: var(--text-muted); }
+        .pdf-card svg { color: var(--text-muted); transition: 0.3s; }
+        .pdf-card:hover svg { color: var(--text-main); }
+
+        /* 3. Styl Q&A i Recenzji */
+        .rating-summary { display: flex; align-items: center; gap: 15px; margin-bottom: 30px; background: var(--glass-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border);}
+        .big-rating { font-size: 36px; font-weight: 800; color: var(--text-main); line-height: 1; }
+        .stars-container svg { width: 18px; height: 18px; fill: var(--accent-color); }
+        .rating-count { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+        .add-review-box { display: flex; flex-direction: column; gap: 15px; margin-bottom: 40px; }
+        .review-input { background: var(--input-bg); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 14px; outline: none; resize: vertical; min-height: 80px; transition: 0.3s; }
+        .review-input:focus { border-color: var(--accent-color); background: var(--glass-bg);}
+        .submit-review-btn { background: var(--gradient-accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; align-self: flex-end; transition: 0.3s;}
+        .submit-review-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .comment-item { display: flex; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 25px; }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .comment-content { display: flex; flex-direction: column; gap: 6px; width: 100%;}
+        .comment-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .comment-date { font-size: 11px; color: var(--text-muted); font-weight: 400; }
+        .comment-text { font-size: 14px; line-height: 1.6; color: var(--text-main); opacity: 0.9; }
+        .timestamp-link { color: var(--accent-color); text-decoration: none; font-weight: 600; background: rgba(245, 158, 11, 0.1); padding: 2px 6px; border-radius: 4px; transition: 0.2s;}
+        .timestamp-link:hover { background: rgba(245, 158, 11, 0.2); }
+        
+        .creator-reply { background: var(--glass-bg); border: 1px solid var(--glass-border); border-left: 3px solid var(--accent-color); border-radius: 8px; padding: 15px; margin-top: 10px; position: relative;}
+        .creator-badge { background: var(--gradient-accent); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; color: white; text-transform: uppercase; margin-bottom: 8px; display: inline-block;}
+
+        /* --- PŁYWAJĄCY SZKLANY PASEK IKON (EduNotes) --- */
+        .glass-sidebar {
+            position: fixed; top: 50%; right: 25px; transform: translateY(-50%);
+            background: var(--nav-bg-1);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid var(--glass-border);
+            border-radius: 40px; padding: 15px 10px; display: flex; flex-direction: column; gap: 15px;
+            z-index: 100; transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px var(--shadow-strong);
+        }
+        .glass-sidebar.panel-open { right: 420px; }
+
+        .nav-icon {
+            width: 46px; height: 46px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            background: transparent; border: 1px solid transparent; color: var(--text-muted); cursor: pointer; transition: 0.3s; position: relative;
+        }
+        .nav-icon:hover { background: var(--glass-hover); color: var(--text-main); transform: scale(1.1); }
+        .nav-icon.active { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); color: var(--accent-color); }
+        .nav-icon svg { width: 22px; height: 22px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round;}
+        
+        .keyboard-hint { position: absolute; bottom: -8px; right: -2px; font-size: 9px; background: var(--bg-panel); color: var(--text-main); padding: 1px 4px; border-radius: 4px; border: 1px solid var(--glass-border); opacity: 0; transition: 0.2s;}
+        .nav-icon:hover .keyboard-hint { opacity: 1; transform: translateY(5px); }
+
+        /* --- WYSÓWANY PANEL (EDUNOTES & AI) --- */
+        .sidebar-panel {
+            position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+            background: var(--sidebar-bg); backdrop-filter: blur(30px); border-left: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; z-index: 90; transition: right 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: -10px 0 40px var(--shadow-strong); padding-top: 80px; 
+        }
+        .sidebar-panel.open { right: 0; }
+
+        .panel-header { padding: 20px 25px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .panel-title { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .panel-title svg { color: var(--accent-color); width: 18px; height: 18px; stroke-width: 1.5; fill: none; stroke: currentColor;}
+        .close-panel-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 50%; width: 30px; height: 30px; color: var(--text-muted); cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center;}
+        .close-panel-btn:hover { color: var(--text-main); background: var(--glass-hover); transform: rotate(90deg); }
+        .close-panel-btn svg { stroke-width: 2; fill: none; stroke: currentColor; width: 18px; height: 18px;}
+
+        .panel-content-area { flex-grow: 1; overflow-y: auto; display: none; flex-direction: column; animation: fadeIn 0.3s ease;}
+        .panel-content-area.active { display: flex; }
+        .panel-content-area::-webkit-scrollbar { width: 4px; }
+        .panel-content-area::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        /* Notatki Styl + AI Auto Notes */
+        .ai-notes-header { display: flex; justify-content: space-between; align-items: center; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); padding: 15px 20px; border-radius: 12px; margin: 15px 20px; }
+        .ai-listening-indicator { display: none; align-items: center; gap: 8px; color: var(--accent-color); font-size: 12px; font-weight: 600; margin: 0 20px 10px 20px; animation: fadeIn 0.3s ease;}
+        .ai-spinner { width: 14px; height: 14px; border: 2px solid rgba(245, 158, 11, 0.3); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-border); transition: .4s; border-radius: 24px; border: 1px solid var(--glass-border); }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .toggle-slider { background-color: var(--accent-color); border-color: var(--accent-color); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        .notes-toolbar { display: flex; gap: 10px; padding: 10px 20px; border-bottom: 1px solid var(--glass-border); background: var(--glass-bg); justify-content: space-between; align-items: center;}
+        .format-tools { display: flex; gap: 5px; }
+        .format-btn { background: var(--glass-bg); border: 1px solid transparent; color: var(--text-muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-family: inherit; display:flex; justify-content:center; align-items:center;}
+        .format-btn:hover { background: var(--glass-hover); color: var(--text-main); }
+        
+        .editor-textarea { flex-grow: 1; background: transparent; border: none; color: var(--text-main); font-family: inherit; font-size: 14px; line-height: 1.6; outline: none; padding: 20px; resize: none;}
+        .editor-textarea::placeholder { color: var(--text-muted); }
+
+        /* Chat AI Styl */
+        .ai-chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .ai-message { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px 12px 12px 0; padding: 12px 15px; font-size: 13px; line-height: 1.5; color: var(--text-main); max-width: 90%; align-self: flex-start;}
+        .user-message { background: var(--glass-hover); border: 1px solid var(--glass-border); border-radius: 12px 12px 0 12px; padding: 12px 15px; font-size: 13px; line-height: 1.5; color: var(--text-main); max-width: 90%; align-self: flex-end; }
+        .chat-input-box { padding: 15px 20px; border-top: 1px solid var(--glass-border); background: var(--bg-panel); }
+        .ai-input-wrapper { display: flex; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 5px 5px 5px 15px; align-items: center; transition: 0.3s;}
+        .ai-input-wrapper:focus-within { border-color: var(--accent-color); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+        .ai-input-wrapper input { flex-grow: 1; background: transparent; border: none; color: var(--text-main); font-family: inherit; font-size: 13px; outline: none; }
+        .send-ai-btn { background: var(--gradient-accent); border: none; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; transition: 0.3s; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 30px; left: 30px; background: var(--nav-bg-1); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); color: var(--text-main); padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: 0.3s; transform: translateY(20px); z-index: 1000; box-shadow: 0 10px 30px var(--shadow-strong); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast svg { stroke-width: 1.5; fill: none; stroke: currentColor; width: 18px; height: 18px;}
+
+        /* --- TRYB FULLSCREEN DLA STRONY --- */
+        body.is-fullscreen .navbar { display: none; }
+        body.is-fullscreen .podcast-layout { max-width: 100%; margin: 0; padding: 0; display: block; }
+        body.is-fullscreen .podcast-content-section, 
+        body.is-fullscreen .podcast-info { display: none; }
+        body.is-fullscreen .podcast-player-section { max-width: 100%; height: 100vh; position: relative; background: #000; justify-content: center; }
+        body.is-fullscreen .media-container { width: 100%; height: 100vh; border-radius: 0; border: none; box-shadow: none; margin: 0; aspect-ratio: auto; display: flex; align-items: center; justify-content: center; }
+        body.is-fullscreen .podcast-video, 
+        body.is-fullscreen .podcast-cover { max-height: 100vh; object-fit: contain; }
+        
+        body.is-fullscreen .audio-controls { 
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 50px 40px 30px 40px; 
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 50; 
+            opacity: 0; transition: opacity 0.3s; 
+        }
+        body.is-fullscreen .podcast-player-section:hover .audio-controls { opacity: 1; }
+        body.is-fullscreen .mode-toggle-btn { top: 20px; right: 20px; z-index: 50; }
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18" style="opacity:0.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Szukaj w podcaście, wpisz pojęcie lub zapytaj AI...">
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw jasny/ciemny">
+                <svg id="themeIcon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+
+            <a href="edustream.main.html" class="back-to-hub-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Wyjdź
+            </a>
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="podcast-layout">
+        
+        <section class="podcast-player-section">
+            
+            <div class="media-container" id="mediaContainer">
+                <div class="edutalks-badge">EduTalks</div>
+
+                <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=800&auto=format&fit=crop" class="podcast-cover" id="audioCover" alt="Podcast Cover">
+                
+                <video src="https://www.w3schools.com/html/mov_bbb.mp4" class="podcast-video" id="videoPlayer" poster="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=800&auto=format&fit=crop"></video>
+                
+                <button class="mode-toggle-btn" id="modeBtn" onclick="toggleMediaMode()">
+                    <svg id="modeIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>
+                    <span id="modeText">Włącz Wideo</span>
+                </button>
+            </div>
+            
+            <div class="podcast-info">
+                <h1 class="podcast-title">Rozmowy o Wszechświecie - Gość: Prof. Astro</h1>
+                <div class="podcast-author">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg>
+                    Głos Nauki EduTalks
+                </div>
+            </div>
+
+            <div class="audio-controls">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                    <div class="progress-thumb"></div>
+                </div>
+                <div class="time-row">
+                    <span>12:34</span>
+                    <span>1:20:00</span>
+                </div>
+
+                <div class="main-buttons">
+                    <button class="speed-btn" title="Prędkość odtwarzania">1.0x</button>
+                    <button class="btn-icon" title="Cofnij o 15s"><svg viewBox="0 0 24 24"><path d="M11 17l-5-5 5-5"></path><path d="M18 17l-5-5 5-5"></path></svg></button>
+                    
+                    <button class="play-btn" id="playBtnPodcast">
+                        <svg viewBox="0 0 24 24" id="playIcon"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    
+                    <button class="btn-icon" title="Przewiń o 15s"><svg viewBox="0 0 24 24"><path d="M13 17l5-5-5-5"></path><path d="M6 17l5-5-5-5"></path></svg></button>
+                    
+                    <button class="btn-icon" title="Pełny Ekran" onclick="toggleFullScreenPodcast()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+                </div>
+            </div>
+        </section>
+
+        <section class="podcast-content-section">
+            <div class="content-tabs">
+                <button class="c-tab active" onclick="switchContentTab('transcript-tab', this)">Transkrypcja</button>
+                <button class="c-tab" onclick="switchContentTab('desc-tab', this)">O odcinku</button>
+                <button class="c-tab" onclick="switchContentTab('qa-tab', this)">Q&A i Recenzje</button>
+            </div>
+
+            <div class="tab-body active" id="transcript-tab">
+                
+                <div class="transcript-line" onclick="setActiveLine(this)">
+                    <span class="t-time">12:15</span>
+                    <span class="speaker-label speaker-host">Prowadząca (Głos Nauki)</span>
+                    <span class="text-host">Więc, Panie Profesorze, czy możemy powiedzieć, że czas płynie inaczej w zależności od tego, gdzie się znajdujemy?</span>
+                </div>
+                
+                <div class="transcript-line active" onclick="setActiveLine(this)">
+                    <span class="t-time">12:34</span>
+                    <span class="speaker-label speaker-guest">Prof. Astro</span>
+                    <span class="text-guest">Dokładnie tak. Grawitacja w pobliżu masywnych obiektów, takich jak czarna dziura, powoduje zakrzywienie czasoprzestrzeni. Z perspektywy kogoś na zewnątrz, twój czas zwalnia.</span>
+                </div>
+                
+                <div class="transcript-line" onclick="setActiveLine(this)">
+                    <span class="t-time">12:50</span>
+                    <span class="speaker-label speaker-guest">Prof. Astro</span>
+                    <span class="text-guest">Nazywamy to dylatacją czasu. To zostało udowodnione eksperymentalnie nawet na Ziemi, używając niezwykle precyzyjnych zegarów atomowych.</span>
+                </div>
+                
+                <div class="transcript-line" onclick="setActiveLine(this)">
+                    <span class="t-time">13:10</span>
+                    <span class="speaker-label speaker-host">Prowadząca (Głos Nauki)</span>
+                    <span class="text-host">Niesamowite. Czyli popularny film kinowy "Interstellar" wcale nie kłamał w tej kwestii?</span>
+                </div>
+                
+                <div class="transcript-line" onclick="setActiveLine(this)">
+                    <span class="t-time">13:15</span>
+                    <span class="speaker-label speaker-guest">Prof. Astro</span>
+                    <span class="text-guest">Kip Thorne, znany i wybitny fizyk, był głównym konsultantem przy tym filmie. Więc fizyka tam przedstawiona, choć ekstremalna, opiera się na bardzo solidnych równaniach Einsteina.</span>
+                </div>
+
+            </div>
+
+            <div class="tab-body" id="desc-tab">
+                <div class="podcast-tags">
+                    <span class="p-tag">#AstroFizyka</span>
+                    <span class="p-tag">#Kosmos</span>
+                    <span class="p-tag">#TeoriaWzględności</span>
+                </div>
+                <div class="description-text">
+                    W dzisiejszym odcinku EduTalks gościmy wybitnego specjalistę, Prof. Astro, z którym zgłębiamy najbardziej fascynujące zagadnienia wszechświata.<br><br>
+                    Porozmawiamy o tym, czym naprawdę jest czasoprzestrzeń, jak działają czarne dziury i czy podróże w czasie są matematycznie możliwe. Idealny materiał do przygotowań do rozszerzonej matury z fizyki!
+                </div>
+
+                <div class="materials-section">
+                    <h4 class="materials-title">Materiały źródłowe i notatki do pobrania</h4>
+                    
+                    <a class="pdf-card" onclick="showToast('Pobieranie materiału: Równania Einsteina...')">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Notatki z wykładu: Równania Einsteina w praktyce</span>
+                            <span class="pdf-size">1.2 MB • Opracowanie: Prof. Astro</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+
+                    <a class="pdf-card" onclick="showToast('Pobieranie materiału: Publikacja badawcza...')">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Publikacja badawcza: Dylatacja czasu (Nature 2025)</span>
+                            <span class="pdf-size">4.5 MB • Dokument oryginalny w jęz. angielskim</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="tab-body" id="qa-tab">
+                
+                <div class="rating-summary">
+                    <div>
+                        <div class="big-rating">4.8</div>
+                        <div class="stars-container">
+                            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        </div>
+                        <div class="rating-count">Oceny: 1,204</div>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; border-left: 1px solid var(--glass-border); padding-left: 15px;">Ten odcinek znalazł się w Top 10 materiałów edukacyjnych dla licealistów z zakresu fizyki.</p>
+                </div>
+
+                <div class="add-review-box">
+                    <textarea class="review-input" placeholder="Podziel się opinią lub zadaj pytanie do eksperta..."></textarea>
+                    <button class="submit-review-btn">Opublikuj</button>
+                </div>
+
+                <div class="comment-item">
+                    <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=100" class="comment-avatar">
+                    <div class="comment-content">
+                        <span class="comment-name">Kamil Tomaszewski <span class="comment-date">2 dni temu</span></span>
+                        <p class="comment-text">Panie Profesorze, w <a href="#" class="timestamp-link">12:34</a> wspomina Pan o zakrzywieniu czasu. Jak to się ma do satelitów GPS? Czy trzeba je kalibrować?</p>
+                        
+                        <div class="creator-reply">
+                            <span class="creator-badge">Prof. Astro (Twórca) ✓</span>
+                            <p class="comment-text" style="font-size: 13px;">Świetne pytanie Kamil! Tak, zegary na satelitach GPS chodzą ułamek sekundy szybciej niż te na Ziemi z powodu mniejszej grawitacji. Inżynierowie muszą to korygować matematycznie!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comment-item">
+                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100" class="comment-avatar">
+                    <div class="comment-content">
+                        <span class="comment-name">Ania W. <span class="comment-date">wczoraj</span></span>
+                        <p class="comment-text">Znakomicie wytłumaczone pojęcie dylatacji. Dzięki temu w końcu zrozumiałam ten temat do matury!</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="glass-sidebar" id="glassSidebar">
+        <button class="nav-icon" onclick="toggleSidebar('content-notes', this, 'Notatki (EduNotes)', '<path d=\'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\'></path>')" title="Notatki (Skrót: N)">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <span class="keyboard-hint">N</span>
+        </button>
+
+        <button class="nav-icon" onclick="toggleSidebar('content-chat', this, 'Asystent AI', '<path d=\'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\'></path>')" title="Asystent AI (Skrót: Q)">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span class="keyboard-hint">Q</span>
+        </button>
+    </nav>
+
+    <div class="sidebar-panel" id="sidebarPanel">
+        <div class="panel-header">
+            <div class="panel-title" id="panelTitle">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                <span>Notatki</span>
+            </div>
+            <button class="close-panel-btn" onclick="closeSidebar()" title="Zamknij panel">
+                <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="panel-content-area" id="content-notes">
+            
+            <div class="ai-notes-header">
+                <div>
+                    <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">✨ Auto-Notatki AI</span>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Sztuczna inteligencja słucha podcastu i zapisuje kluczowe pojęcia.</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="aiNotesToggle" onchange="toggleAutoNotes()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="ai-listening-indicator" id="aiListening">
+                <div class="ai-spinner"></div> AI EduStream analizuje audio...
+            </div>
+
+            <div class="notes-toolbar">
+                <div class="format-tools">
+                    <button class="format-btn"><b>B</b></button>
+                    <button class="format-btn"><i>I</i></button>
+                    <button class="format-btn"><u>U</u></button>
+                </div>
+            </div>
+            <div class="editor-textarea" id="liveNotesArea" contenteditable="true" data-placeholder="Zapisz najważniejsze wnioski ze słuchu..."></div>
+        </div>
+
+        <div class="panel-content-area" id="content-chat">
+            <div class="ai-chat-area" id="aiChatBox">
+                <div class="ai-message">Cześć! Słuchasz odcinka o dylatacji czasu. Jeśli potrzebujesz, żebym rozwinął ten temat wzorami matematycznymi, daj mi znać!</div>
+            </div>
+            <div class="chat-input-box">
+                <div class="ai-input-wrapper">
+                    <input type="text" placeholder="Zapytaj o definicję..." id="aiChatInput" onkeypress="if(event.key === 'Enter') sendAIMessage()">
+                    <button class="send-ai-btn" onclick="sendAIMessage()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="actionToast">
+        <svg viewBox="0 0 24 24" id="toastIcon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+        <span id="toastMsg">Akcja wykonana</span>
+    </div>
+
+    <script>
+        // --- LOGIKA MOTYWU (JASNY/CIEMNY) ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Wróć do ciemnego
+                html.setAttribute('data-theme', 'dark');
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                // Włącz jasny (Apple Style)
+                html.setAttribute('data-theme', 'light');
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        // --- LOGIKA PODCASTU ---
+
+        // Przełączanie Audio / Wideo
+        function toggleMediaMode() {
+            const container = document.getElementById('mediaContainer');
+            const btnText = document.getElementById('modeText');
+            const icon = document.getElementById('modeIcon');
+            
+            container.classList.toggle('video-mode');
+            
+            if(container.classList.contains('video-mode')) {
+                btnText.innerText = "Tryb Audio";
+                icon.innerHTML = '<path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>';
+            } else {
+                btnText.innerText = "Włącz Wideo";
+                icon.innerHTML = '<rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line>';
+            }
+        }
+
+        // Odtwarzanie
+        document.getElementById('playBtnPodcast').addEventListener('click', function() {
+            const icon = document.getElementById('playIcon');
+            const isPlaying = icon.innerHTML.includes('rect');
+            const video = document.getElementById('videoPlayer');
+            
+            if (isPlaying) {
+                icon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+                video.pause();
+            } else {
+                icon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+                video.play();
+            }
+        });
+
+        // Przełączanie Pełnego Ekranu (Fullscreen całej strony żeby działały panele boczne)
+        function toggleFullScreenPodcast() {
+            const container = document.getElementById('mediaContainer');
+            
+            // Wymuś tryb wideo jeśli włączamy fullscreen
+            if(!container.classList.contains('video-mode')) {
+                toggleMediaMode();
+            }
+
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Błąd: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Event nasłuchujący wyjścia/wejścia w pełny ekran
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('is-fullscreen');
+                showToast("Przejdź myszką do prawej krawędzi, aby wysunąć notatnik.");
+            } else {
+                document.body.classList.remove('is-fullscreen');
+            }
+        });
+
+
+        // Przełączanie zakładek (Transkrypcja / Opis / Q&A)
+        function switchContentTab(tabId, btn) {
+            document.querySelectorAll('.c-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            
+            document.querySelectorAll('.tab-body').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Aktywna linia transkrypcji
+        function setActiveLine(element) {
+            document.querySelectorAll('.transcript-line').forEach(line => line.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        // --- LOGIKA PANELU BOCZNEGO (STUDY MODE) ---
+        const sidebarPanel = document.getElementById('sidebarPanel');
+        const glassSidebar = document.getElementById('glassSidebar');
+
+        function toggleSidebar(tabId, iconElement, titleText, svgPath) {
+            if (iconElement.classList.contains('active') && sidebarPanel.classList.contains('open')) {
+                closeSidebar(); return;
+            }
+            if (!sidebarPanel.classList.contains('open')) {
+                sidebarPanel.classList.add('open');
+                glassSidebar.classList.add('panel-open');
+                document.body.classList.add('panel-is-open');
+            }
+            document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
+            iconElement.classList.add('active');
+            document.querySelectorAll('.panel-content-area').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('panelTitle').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${svgPath}</svg> <span>${titleText}</span>`;
+        }
+
+        function closeSidebar() {
+            sidebarPanel.classList.remove('open');
+            glassSidebar.classList.remove('panel-open');
+            document.body.classList.remove('panel-is-open');
+            document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.remove('active'));
+        }
+
+        // --- INTELIGENTNE NOTATKI AI (Wizualizacja pisania ze słuchu) ---
+        let aiNoteTimeout;
+        let isAutoTyping = false;
+        let noteTypingInterval;
+
+        function toggleAutoNotes() {
+            const isChecked = document.getElementById('aiNotesToggle').checked;
+            const indicator = document.getElementById('aiListening');
+            const textarea = document.getElementById('liveNotesArea');
+            
+            if (isChecked) {
+                indicator.style.display = 'flex';
+                aiNoteTimeout = setTimeout(() => {
+                    if (!document.getElementById('aiNotesToggle').checked) return;
+                    
+                    const aiNote = document.createElement('div');
+                    aiNote.style.color = "var(--accent-color)";
+                    aiNote.style.marginTop = "10px";
+                    aiNote.innerHTML = "✨ <b>[AI Note]:</b> ";
+                    textarea.appendChild(aiNote);
+                    
+                    const textNode = document.createElement('span');
+                    textNode.style.color = "var(--text-main)";
+                    aiNote.appendChild(textNode);
+
+                    const textToType = "Grawitacja masywnych obiektów zakrzywia czasoprzestrzeń, co nazywamy dylatacją czasu.";
+                    let i = 0;
+                    isAutoTyping = true;
+                    
+                    noteTypingInterval = setInterval(() => {
+                        if (!isAutoTyping || !document.getElementById('aiNotesToggle').checked) {
+                            clearInterval(noteTypingInterval); return;
+                        }
+                        textNode.textContent += textToType.charAt(i);
+                        i++;
+                        textarea.scrollTop = textarea.scrollHeight;
+                        if (i >= textToType.length) {
+                            clearInterval(noteTypingInterval);
+                            isAutoTyping = false;
+                        }
+                    }, 30);
+                }, 2000);
+            } else {
+                indicator.style.display = 'none';
+                isAutoTyping = false;
+                clearTimeout(aiNoteTimeout);
+                clearInterval(noteTypingInterval);
+            }
+        }
+
+        // --- CHAT AI ---
+        function sendAIMessage() {
+            const input = document.getElementById('aiChatInput');
+            const chatBox = document.getElementById('aiChatBox');
+            const text = input.value.trim();
+            if (text === '') return;
+
+            chatBox.insertAdjacentHTML('beforeend', `<div class="user-message">${text}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                chatBox.insertAdjacentHTML('beforeend', `<div class="ai-message">Zgodnie z teorią względności Einsteina, czas płynie wolniej w silnym polu grawitacyjnym. To zjawisko nazywa się dylatacją czasu.</div>`);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        let toastTimer;
+        function showToast(text) {
+            const toast = document.getElementById('actionToast');
+            document.getElementById('toastMsg').innerText = text;
+            
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+    </script>
+</body>
+</html>

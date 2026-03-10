@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Prądy Oceaniczne - EduStream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES (Spójne z channel.html) --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        :root {
+            --accent-color: #0A84FF;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #a855f7); 
+            --bg-dark: #050505;
+            --bg-panel: #0f0f0f;
+            --bg-card: #121212;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --success-green: #34C759;
+            --error-red: #FF3B30;
+        }
+
+        /* --- TRYB JASNY APPLE --- */
+        body.light-theme {
+            --bg-dark: #F5F5F7;
+            --bg-panel: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-main: #1D1D1F;
+            --text-muted: #86868B;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-hover: rgba(0, 0, 0, 0.05);
+        }
+
+        body.light-theme .navbar { background: rgba(245, 245, 247, 0.85); }
+        body.light-theme .option-label:hover { border-color: rgba(0,0,0,0.3); }
+        body.light-theme .toast { background: rgba(255, 255, 255, 0.95); color: #000; border-color: rgba(0,0,0,0.1); }
+
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            overflow-x: hidden; min-height: 100vh; transition: background-color 0.4s, color 0.4s;
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%; height: 70px; padding: 0 40px; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); border-bottom: 1px solid var(--glass-border);
+            transition: 0.4s;
+        }
+        .nav-left { display: flex; align-items: center; gap: 20px; width: 150px;}
+        .back-btn { display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 14px; transition: 0.3s;}
+        .back-btn:hover { color: var(--text-main); }
+        .back-btn svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke: currentColor; }
+
+        .nav-center { font-weight: 700; font-size: 16px; flex-grow: 1; text-align: center; }
+
+        .nav-right { width: 150px; display: flex; justify-content: flex-end; }
+        .btn-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.3s; }
+        .btn-icon:hover { background: var(--glass-hover); transform: scale(1.05); }
+        .btn-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke: currentColor; }
+
+        /* --- QUIZ HEADER (Informacje o twórcy i filmie) --- */
+        .quiz-header-wrapper {
+            max-width: 800px; margin: 40px auto 20px auto; padding: 0 20px;
+        }
+        .creator-info {
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 20px; border-radius: 16px; margin-bottom: 20px;
+            backdrop-filter: blur(10px); transition: 0.4s;
+        }
+        .creator-left { display: flex; align-items: center; gap: 15px; }
+        .creator-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .verified-badge { background: var(--gradient-accent); border-radius: 50%; width: 14px; height: 14px; display: inline-flex; justify-content: center; align-items: center; color: white; margin-left: 5px;}
+        .verified-badge svg { width: 8px; height: 8px; stroke-width: 3; }
+        
+        .reference-video {
+            display: flex; align-items: center; gap: 15px;
+            background: rgba(10, 132, 255, 0.05); border: 1px solid rgba(10, 132, 255, 0.2);
+            padding: 15px; border-radius: 12px; cursor: pointer; transition: 0.3s;
+        }
+        .reference-video:hover { background: rgba(10, 132, 255, 0.1); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.15);}
+        .ref-thumb { width: 100px; height: 56px; border-radius: 8px; object-fit: cover; }
+
+        /* --- QUIZ CONTAINER & QUESTIONS --- */
+        .quiz-container {
+            max-width: 800px; margin: 0 auto 60px auto; padding: 0 20px;
+        }
+        .question-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 30px; border-radius: 16px; margin-bottom: 25px;
+            backdrop-filter: blur(10px); transition: 0.3s;
+        }
+        .question-number { font-size: 13px; color: #a855f7; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 0.5px;}
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+
+        /* Odpowiedzi Zamknięte i P/F */
+        .options-grid { display: flex; flex-direction: column; gap: 12px; }
+        .option-label {
+            display: flex; align-items: center; gap: 15px;
+            padding: 15px 20px; border: 1px solid var(--glass-border);
+            border-radius: 12px; cursor: pointer; transition: 0.2s; font-size: 15px; font-weight: 500;
+        }
+        .option-label:hover { background: var(--glass-hover); border-color: rgba(255,255,255,0.3); }
+        
+        .option-label input[type="radio"] { display: none; }
+        .custom-radio {
+            width: 20px; height: 20px; border: 2px solid var(--text-muted);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s;
+        }
+        .option-label input[type="radio"]:checked + .custom-radio { border-color: #a855f7; }
+        .option-label input[type="radio"]:checked + .custom-radio::after {
+            content: ''; width: 10px; height: 10px; background: #a855f7; border-radius: 50%;
+        }
+        .option-label.selected { border-color: #a855f7; background: rgba(168, 85, 247, 0.05); }
+
+        /* Odpowiedzi Otwarte */
+        .open-input {
+            width: 100%; background: transparent; border: none; border-bottom: 2px solid var(--glass-border);
+            color: var(--text-main); font-size: 16px; font-family: inherit; padding: 10px 0; outline: none; transition: 0.3s;
+        }
+        .open-input:focus { border-color: #a855f7; }
+
+        /* Przycisk Sprawdź */
+        .btn-gradient {
+            background: var(--gradient-accent); color: #ffffff; border: none; padding: 15px 40px;
+            border-radius: 30px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.3s ease;
+            font-family: inherit; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            display: block; margin: 40px auto 0 auto; width: 100%; max-width: 300px; text-align: center;
+        }
+        .btn-gradient:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5); filter: brightness(1.1); }
+
+        /* Statusy wyników */
+        .correct-answer { border-color: var(--success-green) !important; background: rgba(52, 199, 89, 0.1) !important; }
+        .wrong-answer { border-color: var(--error-red) !important; background: rgba(255, 59, 48, 0.1) !important; }
+        .feedback-text { font-size: 14px; margin-top: 15px; font-weight: 600; display: none; }
+        .feedback-text.show { display: block; }
+        .correct-text { color: var(--success-green); }
+        .wrong-text { color: var(--error-red); }
+
+        #results-summary {
+            display: none; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 40px; border-radius: 16px; margin-top: 40px; animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* TOAST NOTIFICATION */
+        .toast { position: fixed; bottom: 30px; left: 30px; background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: 0.3s; transform: translateY(20px); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast svg { stroke-width: 1.5; fill: none; stroke: currentColor; width: 18px; height: 18px;}
+
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="channel.html" class="back-btn">
+                <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Wróć na kanał
+            </a>
+        </div>
+        
+        <div class="nav-center">Tryb Quizu ✨</div>
+        
+        <div class="nav-right">
+            <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-icon" title="Zmień motyw">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="quiz-header-wrapper">
+            
+            <div class="creator-info">
+                <div class="creator-left">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100" class="creator-avatar" alt="Twórca">
+                    <div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Quiz przygotowany przez:</div>
+                        <div style="font-size: 16px; font-weight: 700;">
+                            Fundacja EkoŚwiat 
+                            <span class="verified-badge"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 12px; font-weight: 800; color: #a855f7; text-transform: uppercase;">Poziom: Średni</div>
+            </div>
+
+            <div style="font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-muted);">Zalecany materiał do powtórki:</div>
+            
+            <div class="reference-video" onclick="window.open('youtube.html', '_blank')">
+                <img src="https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=200" class="ref-thumb" alt="Wideo">
+                <div>
+                    <div style="font-size: 14px; font-weight: 700; margin-bottom: 5px;">Sekrety Ziemi: Jak prądy oceaniczne kształtują nasz klimat?</div>
+                    <div style="font-size: 12px; color: var(--accent-color); font-weight: 600;">Obejrzyj ponownie w nowej karcie ↗</div>
+                </div>
+            </div>
+            
+        </section>
+
+        <section class="quiz-container" id="quizForm">
+            
+            <div class="question-card" data-type="closed" data-answer="1">
+                <div class="question-number">Pytanie 1 / 10</div>
+                <div class="question-text">Co jest główną siłą napędową powierzchniowych prądów morskich?</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q1" value="0"><div class="custom-radio"></div>Różnice zasolenia</label>
+                    <label class="option-label"><input type="radio" name="q1" value="1"><div class="custom-radio"></div>Stałe wiatry (np. pasaty)</label>
+                    <label class="option-label"><input type="radio" name="q1" value="2"><div class="custom-radio"></div>Grawitacja Księżyca</label>
+                    <label class="option-label"><input type="radio" name="q1" value="3"><div class="custom-radio"></div>Ruchy tektoniczne dna oceanu</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="0">
+                <div class="question-number">Pytanie 2 / 10</div>
+                <div class="question-text">Prawda czy Fałsz: Prąd Zatokowy (Golfsztrom) to prąd zimny, który obniża temperaturę w Europie.</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q2" value="1"><div class="custom-radio"></div>Prawda</label>
+                    <label class="option-label"><input type="radio" name="q2" value="0"><div class="custom-radio"></div>Fałsz</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="open" data-answer="upwelling">
+                <div class="question-number">Pytanie 3 / 10</div>
+                <div class="question-text">Jak nazywa się zjawisko polegające na wynoszeniu zimnych, bogatych w biogeny wód głębinowych na powierzchnię oceanu?</div>
+                <input type="text" class="open-input" name="q3" placeholder="Wpisz jedno słowo (np. zjawisko...)">
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="2">
+                <div class="question-number">Pytanie 4 / 10</div>
+                <div class="question-text">Anomalia klimatyczna El Niño występuje na obszarze Oceanu:</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q4" value="0"><div class="custom-radio"></div>Atlantyckiego</label>
+                    <label class="option-label"><input type="radio" name="q4" value="1"><div class="custom-radio"></div>Indyjskiego</label>
+                    <label class="option-label"><input type="radio" name="q4" value="2"><div class="custom-radio"></div>Spokojnego (Pacyfiku)</label>
+                    <label class="option-label"><input type="radio" name="q4" value="3"><div class="custom-radio"></div>Arktycznego</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="1">
+                <div class="question-number">Pytanie 5 / 10</div>
+                <div class="question-text">Prawda czy Fałsz: Gęstość wody morskiej jest uzależniona głównie od jej temperatury oraz zasolenia.</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q5" value="1"><div class="custom-radio"></div>Prawda</label>
+                    <label class="option-label"><input type="radio" name="q5" value="0"><div class="custom-radio"></div>Fałsz</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="open" data-answer="kurosiwo">
+                <div class="question-number">Pytanie 6 / 10</div>
+                <div class="question-text">Podaj nazwę ciepłego prądu morskiego obmywającego wschodnie wybrzeża Azji (m.in. Japonię).</div>
+                <input type="text" class="open-input" name="q6" placeholder="Wpisz nazwę prądu...">
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="0">
+                <div class="question-number">Pytanie 7 / 10</div>
+                <div class="question-text">Globalna cyrkulacja termohalinowa (tzw. "oceaniczny pas transmisyjny") jest napędzana przez:</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q7" value="0"><div class="custom-radio"></div>Różnice gęstości wody (temperatura i zasolenie)</label>
+                    <label class="option-label"><input type="radio" name="q7" value="1"><div class="custom-radio"></div>Prądy strumieniowe w atmosferze (Jet stream)</label>
+                    <label class="option-label"><input type="radio" name="q7" value="2"><div class="custom-radio"></div>Ogromne zrzuty wód z rzek do oceanu</label>
+                    <label class="option-label"><input type="radio" name="q7" value="3"><div class="custom-radio"></div>Trzęsienia ziemi pod dnem morza</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="1">
+                <div class="question-number">Pytanie 8 / 10</div>
+                <div class="question-text">Prawda czy Fałsz: Zimny Prąd Peruwiański przyczynia się do powstawania niezwykle suchej pustyni Atakama w Ameryce Południowej.</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q8" value="1"><div class="custom-radio"></div>Prawda</label>
+                    <label class="option-label"><input type="radio" name="q8" value="0"><div class="custom-radio"></div>Fałsz</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="open" data-answer="tsunami">
+                <div class="question-number">Pytanie 9 / 10</div>
+                <div class="question-text">Jak nazywa się olbrzymia fala oceaniczna wywoływana najczęściej przez podwodne trzęsienia ziemi?</div>
+                <input type="text" class="open-input" name="q9" placeholder="Wpisz odpowiedź...">
+                <div class="feedback-text"></div>
+            </div>
+
+            <div class="question-card" data-type="closed" data-answer="1">
+                <div class="question-number">Pytanie 10 / 10</div>
+                <div class="question-text">Jak wpłynie gwałtowne stopnienie pokrywy lodowej na Grenlandii na cyrkulację termohalinową na północnym Atlantyku?</div>
+                <div class="options-grid">
+                    <label class="option-label"><input type="radio" name="q10" value="0"><div class="custom-radio"></div>Przyspieszy ją z powodu większej ilości wody</label>
+                    <label class="option-label"><input type="radio" name="q10" value="1"><div class="custom-radio"></div>Spowolni ją lub zatrzyma przez spadek zasolenia i gęstości wody</label>
+                    <label class="option-label"><input type="radio" name="q10" value="2"><div class="custom-radio"></div>Nie wpłynie w żaden sposób</label>
+                    <label class="option-label"><input type="radio" name="q10" value="3"><div class="custom-radio"></div>Odwróci kierunek Prądu Zatokowego z powrotem na południe</label>
+                </div>
+                <div class="feedback-text"></div>
+            </div>
+
+            <button class="btn-gradient" id="submitBtn" onclick="checkAnswers()">Zakończ i sprawdź odpowiedzi</button>
+
+            <div id="results-summary">
+                <div style="font-size: 48px; margin-bottom: 10px;">🏆</div>
+                <h2 style="font-size: 24px; margin-bottom: 10px;">Twój wynik: <span id="scoreText" style="color: #a855f7;">0/10</span></h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;" id="motivationText">Przeanalizuj swoje błędy poniżej.</p>
+                <button class="btn-gradient" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">Przejrzyj odpowiedzi</button>
+            </div>
+
+        </section>
+    </main>
+
+    <div class="toast" id="actionToast">
+        <svg viewBox="0 0 24 24" id="toastIcon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+        <span id="toastMsg">Akcja wykonana</span>
+    </div>
+
+    <script>
+        // ZMIANA: Skrypt obsługujący Jasny/Ciemny Motyw
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            showToast(document.body.classList.contains('light-theme') ? "☀️ Tryb jasny włączony" : "🌙 Tryb ciemny włączony");
+        }
+
+        // ZMIANA: Obsługa Toastów
+        let toastTimer;
+        function showToast(message) {
+            const toast = document.getElementById('actionToast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // UX: Zaznaczanie odpowiedzi (dodanie tła)
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const name = this.getAttribute('name');
+                document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+                    r.parentElement.classList.remove('selected');
+                });
+                this.parentElement.classList.add('selected');
+            });
+        });
+
+        // Funkcja sprawdzająca quiz
+        function checkAnswers() {
+            let score = 0;
+            const totalQuestions = 10;
+            const cards = document.querySelectorAll('.question-card');
+
+            cards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                const correctAnswer = card.getAttribute('data-answer').toLowerCase();
+                const feedbackEl = card.querySelector('.feedback-text');
+                let isCorrect = false;
+
+                if (type === 'closed') {
+                    const radios = card.querySelectorAll('input[type="radio"]');
+                    let answered = false;
+                    
+                    radios.forEach(radio => {
+                        // Reset stylów
+                        radio.parentElement.classList.remove('correct-answer', 'wrong-answer');
+                        radio.parentElement.style.border = "";
+                        
+                        if (radio.checked) {
+                            answered = true;
+                            if (radio.value === correctAnswer) {
+                                isCorrect = true;
+                                radio.parentElement.classList.add('correct-answer');
+                            } else {
+                                radio.parentElement.classList.add('wrong-answer');
+                            }
+                        }
+                        
+                        if (radio.value === correctAnswer) {
+                            radio.parentElement.style.border = "2px solid var(--success-green)";
+                        }
+                    });
+
+                    if (!answered) {
+                        feedbackEl.innerHTML = "<span class='wrong-text'>Nie udzielono odpowiedzi.</span>";
+                    } else if (isCorrect) {
+                        feedbackEl.innerHTML = "<span class='correct-text'>✓ Dobra odpowiedź!</span>";
+                        score++;
+                    } else {
+                        feedbackEl.innerHTML = "<span class='wrong-text'>✗ Zła odpowiedź.</span>";
+                    }
+
+                } else if (type === 'open') {
+                    const input = card.querySelector('.open-input');
+                    const userAnswer = input.value.trim().toLowerCase();
+                    
+                    // Reset stylów
+                    input.style.borderColor = "var(--glass-border)";
+                    input.style.color = "var(--text-main)";
+
+                    if (userAnswer === "") {
+                        feedbackEl.innerHTML = "<span class='wrong-text'>Nie udzielono odpowiedzi.</span> (Prawidłowa: " + card.getAttribute('data-answer') + ")";
+                    } else if (userAnswer.includes(correctAnswer)) {
+                        isCorrect = true;
+                        input.style.borderColor = "var(--success-green)";
+                        input.style.color = "var(--success-green)";
+                        feedbackEl.innerHTML = "<span class='correct-text'>✓ Dobra odpowiedź!</span>";
+                        score++;
+                    } else {
+                        input.style.borderColor = "var(--error-red)";
+                        input.style.color = "var(--error-red)";
+                        feedbackEl.innerHTML = `<span class='wrong-text'>✗ Odpowiedź niepoprawna.</span> Prawidłowa odpowiedź zawiera słowo: <strong>${card.getAttribute('data-answer')}</strong>`;
+                    }
+                }
+                
+                feedbackEl.classList.add('show');
+            });
+
+            // Wyświetlenie wyniku
+            document.getElementById('submitBtn').style.display = 'none';
+            const summary = document.getElementById('results-summary');
+            summary.style.display = 'block';
+            document.getElementById('scoreText').innerText = `${score} / ${totalQuestions}`;
+            
+            const motivation = document.getElementById('motivationText');
+            if(score === 10) motivation.innerText = "Bezbłędnie! Masz hydrosferę w małym palcu! 🌊";
+            else if(score >= 7) motivation.innerText = "Świetny wynik! Niewiele brakuje do perfekcji. Zobacz błędy powyżej.";
+            else if(score >= 4) motivation.innerText = "Dobry początek. Warto jeszcze raz obejrzeć odcinek o prądach.";
+            else motivation.innerText = "Nie poddawaj się! Edukacja to proces. Wróć do wideo i spróbuj ponownie.";
+        }
+    </script>
+</body>
+</html>

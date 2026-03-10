@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <title>EduStream & Galaktyka - Płynne Przejście</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Inter:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,800;1,900&family=Orbitron:wght@800&family=Teko:wght@700&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.39/dist/lenis.min.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <style>
+        /* =========================================================
+           WSPÓLNE ZMIENNE I BAZA
+           ========================================================= */
+        :root {
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --bg-dark: #050505;
+            --overlay-btn: rgba(255, 255, 255, 0.03);
+            --overlay-border: rgba(255, 255, 255, 0.1);
+            --overlay-btn-hover: rgba(255, 255, 255, 0.12);
+            --accent-white: #ffffff; 
+            --heart-color: #ef4444; 
+            
+            --x1: 50%; --y1: 40%; --r1: 59; --g1: 130; --b1: 246; 
+            --x2: 25%; --y2: 65%; --r2: 217; --g2: 70; --b2: 239;
+            --x3: 75%; --y3: 60%; --r3: 99; --g3: 102; --b3: 241;
+        }
+
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility; 
+        }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #030305; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(217, 70, 239, 0.4); }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        /* =========================================================
+           STICKY NAVBAR
+           ========================================================= */
+        .navbar {
+            position: fixed; 
+            top: 0; left: 0; width: 100%;
+            padding: 35px 50px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 1000;
+            transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        padding 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.4s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(5, 5, 5, 0.5);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            padding: 15px 50px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 50px; }
+        
+        .logo { display: flex; align-items: center; cursor: pointer; margin-top: -80px; margin-bottom: -80px; transition: transform 0.3s ease; }
+        .navbar.scrolled .logo { transform: scale(0.9); }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .nav-links { display: flex; align-items: center; gap: 35px; }
+        .nav-link {
+            position: relative; color: var(--text-main); text-decoration: none; 
+            font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; 
+            transition: color 0.3s, opacity 0.3s; text-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0.8;
+            cursor: pointer; background: none; border: none; font-family: inherit;
+        }
+        .nav-link:hover { opacity: 1; }
+        .nav-link svg { width: 18px; height: 18px; }
+        .nav-link::after {
+            content: ''; position: absolute; bottom: -6px; left: 0;
+            width: 0%; height: 2px; background-color: var(--text-main);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 2px;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+        .search-wrapper {
+            display: flex; align-items: center; background: transparent; border-radius: 30px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid transparent; padding: 4px;
+        }
+        .search-wrapper.active {
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(15px);
+            border-color: rgba(255,255,255,0.2); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .search-btn { padding: 4px; margin: 0; }
+        .search-btn::after { display: none; } 
+        
+        .search-input {
+            width: 0; border: none; background: transparent; color: white; outline: none;
+            padding: 0; font-size: 14px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-family: inherit;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.5); }
+        .search-wrapper.active .search-input { width: 220px; padding: 0 10px; }
+        .search-wrapper.active .search-text { display: none; }
+
+        .nav-right { display: flex; align-items: center; gap: 25px; }
+
+        .glass-btn-nav {
+            display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 10px 20px; border-radius: 30px; color: var(--text-main); text-decoration: none;
+            font-size: 14px; font-weight: 600; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .glass-btn-nav:hover {
+            background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .glass-btn-nav svg { width: 16px; height: 16px; }
+
+        .user-profile-link {
+            display: flex; align-items: center; gap: 12px; text-decoration: none; color: white;
+            padding: 6px 12px 6px 6px; border-radius: 30px; transition: 0.3s;
+        }
+        .user-profile-link:hover { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .user-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); }
+        .settings-icon { width: 20px; height: 20px; opacity: 0.8; transition: transform 0.3s; }
+        .user-profile-link:hover .settings-icon { transform: rotate(90deg); opacity: 1; }
+
+        /* =========================================================
+           HERO SECTION
+           ========================================================= */
+        .hero-sticky-container { position: relative; height: 250vh; z-index: 5; }
+        .hero-section {
+            position: sticky; top: 0; width: 100%; height: 100vh;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            padding-bottom: 70px; overflow: hidden; perspective: 1000px;
+            background-color: var(--bg-dark); will-change: transform, opacity;
+        }
+        .film-grain {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.04; z-index: 3; pointer-events: none;
+        }
+        .bg-layer {
+            position: absolute; top: -5%; left: -5%; width: 110%; height: 110%;
+            background-size: cover; background-position: center; opacity: 0; 
+            filter: blur(15px) brightness(0.4); transition: opacity 1.5s ease-in-out, filter 1.5s ease-in-out;
+            transform: scale(1.02); z-index: 1;
+        }
+        .bg-layer.active { opacity: 1; filter: blur(0px) brightness(1); animation: kenBurns 7.5s linear forwards; }
+        @keyframes kenBurns { 0% { transform: scale(1.02); } 100% { transform: scale(1.07); } }
+
+        .hero-vignette-top { position: absolute; top: 0; left: 0; width: 100%; height: 280px; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.6) 20%, transparent 100%); z-index: 2; pointer-events: none; }
+        .hero-vignette-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 500px; background: linear-gradient(to top, #05050a 0%, rgba(5,5,10,0.8) 25%, transparent 100%); z-index: 2; pointer-events: none; }
+
+        .hero-content {
+            position: relative; z-index: 10; width: 100%; max-width: 900px;
+            margin: 0 auto; text-align: center; display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.1s ease-out; 
+        }
+        .hero-content::before {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140%; height: 140%;
+            background: radial-gradient(circle, rgba(0,0,0,0.6) 0%, transparent 60%);
+            z-index: -1; pointer-events: none; filter: blur(30px);
+        }
+
+        .stagger-anim { opacity: 0; transform: translateY(20px); transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        .stagger-anim.visible { opacity: 1; transform: translateY(0); }
+        
+        #hero-meta { transition-delay: 0.1s; } #hero-title { transition-delay: 0.2s; }
+        #hero-desc { transition-delay: 0.3s; } #hero-actions { transition-delay: 0.4s; }
+
+        .meta-data { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); letter-spacing: 0.5px; }
+        .meta-match { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.3); }
+        .meta-badge { border: 1px solid rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+        .meta-dot { color: rgba(255,255,255,0.2); font-size: 10px;}
+
+        .hero-title {
+            font-size: 72px; font-weight: 800; margin-bottom: 15px; letter-spacing: -2px; 
+            background: linear-gradient(to right, #ffffff 20%, rgba(255,255,255,0.6) 40%, #ffffff 60%);
+            background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
+            animation: shimmerTitle 6s linear infinite;
+        }
+        @keyframes shimmerTitle { to { background-position: 200% center; } }
+        .hero-desc { font-size: 16px; line-height: 1.7; color: rgba(255,255,255,0.85); margin-bottom: 35px; text-shadow: 0 2px 12px rgba(0,0,0,1); max-width: 700px; font-weight: 300; }
+
+        .action-row { display: flex; gap: 16px; align-items: center; margin-bottom: 10px;}
+        .icon-btn { width: 48px; height: 48px; background-color: var(--overlay-btn); border: 1px solid var(--overlay-border); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; backdrop-filter: blur(16px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+        .icon-btn:hover { background-color: var(--overlay-btn-hover); transform: translateY(-3px) scale(1.05); border-color: rgba(255,255,255,0.3); box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+        .icon-btn svg { width: 20px; height: 20px; opacity: 0.9; transition: opacity 0.3s, fill 0.3s, stroke 0.3s;}
+        .icon-btn:hover svg { opacity: 1; }
+
+        .play-btn { background-color: var(--text-main); color: var(--bg-dark); border: none; padding: 15px 42px; border-radius: 50px; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 8px 30px rgba(255,255,255,0.15); }
+        .play-btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 15px 40px rgba(255,255,255,0.3); background-color: #f4f4f5; }
+        .play-btn svg { width: 22px; height: 22px; fill: currentColor; }
+
+        .heart-btn.liked { border-color: var(--heart-color); animation: heartPop 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .heart-btn.liked svg { fill: var(--heart-color); stroke: var(--heart-color); }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+        .carousel-arrow { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 50%; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); cursor: pointer; z-index: 10; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(8px); }
+        .carousel-arrow:hover { color: white; background: rgba(255,255,255,0.1); transform: translateY(-50%) scale(1.1); border-color: rgba(255,255,255,0.2); }
+        .carousel-arrow svg { width: 24px; height: 24px; stroke-width: 1.5px; }
+
+        .carousel-indicators { position: absolute; bottom: 35px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; }
+        .indicator { width: 50px; height: 3px; background-color: rgba(255,255,255,0.2); border-radius: 3px; overflow: hidden; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.5); transition: background-color 0.3s; }
+        .indicator-fill { height: 100%; width: 0%; background-color: #ffffff; border-radius: 3px; }
+        .indicator.active .indicator-fill { animation: fillProgress 7s linear forwards; box-shadow: 0 0 10px rgba(255, 255, 255, 0.8); }
+        @keyframes fillProgress { 0% { width: 0%; } 100% { width: 100%; } }
+
+        .info-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(15px); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.4s ease; }
+        .info-modal.active { opacity: 1; pointer-events: all; }
+        .modal-content-hero { background: rgba(20,20,20,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 50px; max-width: 650px; width: 90%; position: relative; transform: translateY(40px) scale(0.95); transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 30px 60px rgba(0,0,0,0.8); text-align: left; }
+        .info-modal.active .modal-content-hero { transform: translateY(0) scale(1); }
+        .close-modal { position: absolute; top: 25px; right: 25px; background: rgba(255,255,255,0.1); border: none; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; }
+        .close-modal:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+        .close-modal svg { width: 18px; height: 18px; }
+        .modal-title-hero { font-size: 32px; font-weight: 800; margin-bottom: 15px; }
+        .modal-desc-text { font-size: 16px; line-height: 1.8; color: rgba(255,255,255,0.8); margin-bottom: 25px; }
+        .modal-details { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 2; } .modal-details strong { color: white; }
+
+        /* =========================================================
+           TŁA
+           ========================================================= */
+        #part1-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.16, 1, 0.3, 1); opacity: 1; }
+        #part2-bg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2; pointer-events: none; transition: opacity 1.5s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; background-color: #000; }
+        #part1-content { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 100px 0 0 0; min-height: 100vh; margin-top: 60vh; }
+        #part2-content { position: relative; z-index: 10; width: 100vw; height: 100vh; }
+
+        /* AMBILIGHT */
+        .bg-glow { position: absolute; inset: 0; background-color: #05050a; background-image: radial-gradient(circle at var(--x1) var(--y1), rgba(var(--r1), var(--g1), var(--b1), 0.5) 0%, transparent 55%), radial-gradient(circle at var(--x2) var(--y2), rgba(var(--r2), var(--g2), var(--b2), 0.35) 0%, transparent 60%), radial-gradient(circle at var(--x3) var(--y3), rgba(var(--r3), var(--g3), var(--b3), 0.45) 0%, transparent 60%); }
+        .noise-overlay { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); opacity: 0.04; }
+        .global-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.85) 100%); }
+        .bg-typography { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: flex; flex-direction: column; gap: -5px; transition: opacity 0.8s; }
+        .bg-word { font-size: 140px; font-weight: 900; font-style: italic; line-height: 0.85; letter-spacing: -2px; white-space: nowrap; background: linear-gradient(110deg, rgba(255, 255, 255, 0.04) 20%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0.18) 50%, rgba(255, 255, 255, 0.04) 60%, rgba(255, 255, 255, 0.04) 100%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.05)); animation: metalFlow 40s linear infinite; }
+        .bg-word:nth-child(1) { animation-delay: 0s; } .bg-word:nth-child(2) { animation-delay: -13.3s; } .bg-word:nth-child(3) { animation-delay: -26.6s; }
+        @keyframes metalFlow { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+
+        #bg-image { position: absolute; top: -5%; left: -5%; width: 110vw; height: 110vh; background-image: url('kosmos.jpg'); background-color: #050510; background-size: cover; background-position: center bottom; filter: brightness(0.4) contrast(1.3) grayscale(0.2); z-index: 1; }
+        #part2-bg canvas { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
+        .transition-section { width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; position: relative; z-index: 10; }
+        .transition-text { font-size: 22px; font-weight: 400; letter-spacing: -0.5px; color: #86868b; line-height: 1.4; margin: 0; padding: 0; }
+        .transition-text .highlight { font-weight: 500; font-size: 24px; display: block; margin-top: 6px; color: #ffffff; }
+
+        /* =========================================================
+           KARTY TINDER 
+           ========================================================= */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes blurUpReveal { from { opacity: 0; filter: blur(25px) brightness(0.4); transform: translateY(40px) scale(1.05); } to { opacity: 1; filter: blur(0) brightness(1); transform: translateY(0) scale(1); } }
+        @keyframes bgBlurReveal { from { filter: blur(20px) brightness(0.6); transform: scale(1.1); } to { filter: blur(0) brightness(1); transform: scale(1); } }
+
+        .recommendation-section { position: relative; width: 100%; max-width: 1200px; display: flex; flex-direction: column; align-items: center; opacity: 0; animation: fadeInUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; margin-bottom: 120px; transition: opacity 0.8s, transform 0.8s; }
+        .headers { text-align: center; margin-bottom: 30px; display: flex; flex-direction: column; align-items: center;}
+        .sub-title { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 12px; background: linear-gradient(110deg, #d946ef 0%, #8b5cf6 30%, #ffffff 50%, #8b5cf6 70%, #d946ef 100%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: metalShine 4s linear infinite; }
+        @keyframes metalShine { to { background-position: 200% center; } }
+        .main-title { font-size: 42px; font-weight: 700; letter-spacing: -1px; color: #ffffff; text-shadow: 0 4px 25px rgba(0,0,0,0.8); margin-bottom: 15px;}
+        .ai-reasoning { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); padding: 8px 18px; border-radius: 20px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .ai-sparkle { color: #d946ef; animation: pulse 2s infinite; font-size: 16px;}
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.9); } }
+        .typewriter-text { border-right: 2px solid #d946ef; padding-right: 4px; white-space: nowrap; overflow: hidden; }
+
+        .stack-progress-container { display: flex; gap: 8px; margin-bottom: 25px; opacity: 0; animation: fadeInUp 0.8s ease forwards 0.5s; }
+        .progress-line { width: 40px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.15); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .progress-line.viewed { background: rgba(255, 255, 255, 0.8); }
+        .progress-line.active { background: #d946ef; box-shadow: 0 0 10px rgba(217, 70, 239, 0.6); transform: scaleY(1.2); }
+
+        .stack-wrapper { position: relative; width: 100%; height: 380px; display: flex; justify-content: center; align-items: center; transform: translateX(-30px); }
+
+        .end-message { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 0; opacity: 0; visibility: hidden; transform: scale(0.9) translateX(30px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
+        .end-message.visible { opacity: 1; visibility: visible; transform: scale(1) translateX(30px); z-index: 150; pointer-events: auto; }
+        #survey-container { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .end-icon { margin-bottom: 15px; display: flex; align-items: center; justify-content: center; }
+        .end-icon svg { width: 64px; height: 64px; animation: floatIcon 4s ease-in-out infinite; }
+        @keyframes floatIcon { 0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 15px rgba(217,70,239,0.3)); } 50% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 25px rgba(217,70,239,0.7)); } }
+        .end-message h3 { font-size: 28px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; background: linear-gradient(110deg, #ffffff, #bae6fd); -webkit-background-clip: text; color: transparent; }
+        .feedback-options { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; width: 100%; }
+        .feedback-btn { background: transparent; border: 1px solid rgba(255, 255, 255, 0.15); color: rgba(255, 255, 255, 0.7); padding: 16px 24px; border-radius: 16px; font-size: 13px; font-weight: 500; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 110px; }
+        .feedback-btn svg { width: 28px; height: 28px; transition: transform 0.3s ease; stroke: currentColor; }
+        .feedback-btn:hover { background: rgba(255, 255, 255, 0.05); color: #ffffff; border-color: rgba(255, 255, 255, 0.4); transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .feedback-btn:hover svg { transform: scale(1.15); }
+        .thank-you-msg { display: none; flex-direction: column; align-items: center; animation: fadeInUp 0.5s forwards; }
+        .thank-you-msg p { color: rgba(255,255,255,0.6); font-size: 15px; max-width: 340px; margin-bottom: 28px; line-height: 1.6; }
+        .btn-restart { background: rgba(217, 70, 239, 0.15); border: 1px solid rgba(217, 70, 239, 0.4); color: #fff; padding: 12px 28px; border-radius: 30px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(8px); margin-top: 10px; }
+        .btn-restart:hover { background: rgba(217, 70, 239, 0.3); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(217, 70, 239, 0.2); }
+
+        .card-stack { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; perspective: 1200px; transform-style: preserve-3d; z-index: 5; }
+        .card { position: absolute; width: 500px; height: 320px; --tx: 0px; --ty: 0px; --tz: 0px; --scale: 1; --rx: 0deg; --ry: 0deg; transform: translateX(var(--tx)) translateY(var(--ty)) translateZ(var(--tz)) scale(var(--scale)) rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease, filter 0.6s ease; z-index: 1; opacity: 0; visibility: hidden; pointer-events: none; transform-style: preserve-3d; will-change: transform, opacity; -webkit-backface-visibility: hidden; backface-visibility: hidden; transform-origin: center; border-radius: 20px; outline: 1px solid rgba(0,0,0,0.18); }
+        .card-bg { position: absolute; inset: 0; border-radius: 20px; background-size: cover; background-position: center; background-color: #030305; box-shadow: 0 20px 40px rgba(0,0,0,0.6); overflow: hidden; transition: box-shadow 0.45s ease, transform 0.45s ease; transform-style: preserve-3d; animation: bgBlurReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .card-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 1; transition: opacity 0.8s ease; pointer-events: none; mix-blend-mode: screen; filter: grayscale(20%) contrast(120%); }
+        .card.active:hover .card-video { opacity: 0.6; transition-delay: 0.8s; }
+        .card-overlay-gradient { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.85) 100%); }
+        .card-glare { position: absolute; inset: 0; z-index: 20; pointer-events: none; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.15) 0%, transparent 60%); opacity: 0; transition: opacity 0.4s ease; mix-blend-mode: overlay; }
+        .card.active:hover .card-glare { opacity: 1; }
+        .card-bg::after { content: ''; position: absolute; inset: 0; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; pointer-events: none; z-index: 10; }
+        .card-ui { opacity: 0; transition: opacity 0.4s ease; pointer-events: none; width: 100%; height: 100%; position: relative; border-radius: 20px; z-index: 30; transform-style: preserve-3d; transform: translateZ(60px); }
+        .card.active .card-ui { opacity: 1; pointer-events: auto; }
+        .swipe-overlay { position: absolute; inset: 0; z-index: 25; opacity: 0; transition: opacity 0.3s ease; mix-blend-mode: overlay; pointer-events: none; }
+        .dislike-overlay { background: linear-gradient(to right, rgba(239, 68, 68, 0.9), transparent); }
+        .like-overlay { background: linear-gradient(to left, rgba(217, 70, 239, 0.9), transparent); }
+
+        .card.active { --tx: 0px; --ty: 0px; --tz: 120px; --scale: 1; --ry: 0deg; z-index: 100; opacity: 1; visibility: visible; filter: none; pointer-events: auto; cursor: grab; }
+        .card.active:active { cursor: grabbing; }
+        .card.active .card-bg { box-shadow: 0 35px 70px rgba(0,0,0,0.85); }
+        .card.behind { --tx: 50px; --ty: 10px; --tz: -40px; --scale: 0.95; --ry: -3deg; z-index: 15; opacity: 0.9; visibility: visible; filter: blur(1.5px) brightness(0.6); }
+        .card.behind-2 { --tx: 100px; --ty: 20px; --tz: -80px; --scale: 0.9; --ry: -6deg; z-index: 14; opacity: 0.7; visibility: visible; filter: blur(3px) brightness(0.4); }
+        .card.behind-3 { --tx: 150px; --ty: 30px; --tz: -120px; --scale: 0.85; --ry: -9deg; z-index: 13; opacity: 0.4; visibility: visible; filter: blur(5px) brightness(0.2); }
+        .card.swipe-left { transform: translateX(-150%) translateY(100px) rotate(-25deg) !important; opacity: 0 !important; transition: transform 0.5s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.4s; }
+        .card.swipe-left .dislike-overlay { opacity: 1; }
+        .card.swipe-right { transform: translateX(150%) translateY(100px) rotate(25deg) !important; opacity: 0 !important; transition: transform 0.5s cubic-bezier(0.8, 0, 0.2, 1), opacity 0.4s; }
+        .card.swipe-right .like-overlay { opacity: 1; }
+        .card.expanding-player { position: fixed !important; top: 50% !important; left: 50% !important; width: 100vw !important; height: 100vh !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; border-radius: 0 !important; transition: all 0.7s cubic-bezier(0.85, 0, 0.15, 1) !important; outline: none !important; cursor: default !important; }
+        .card.expanding-player .card-bg { border-radius: 0 !important; }
+        .card.expanding-player .card-bg::after { opacity: 0; }
+        .card.expanding-player .card-ui { opacity: 0 !important; }
+        .ui-hidden { opacity: 0 !important; pointer-events: none !important; }
+
+        .premium-badge { position: absolute; top: 25px; left: 25px; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.95); padding: 6px 14px; border-radius: 30px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; z-index: 40; transform: translateZ(20px); }
+        .ai-badge { position: absolute; top: 25px; right: 25px; background: rgba(20,20,25,0.45); backdrop-filter: blur(8px); border: 1px solid rgba(217,70,239,0.12); color: #dfe6ff; padding: 6px 10px; border-radius: 18px; font-size: 11px; font-weight: 700; z-index: 40; letter-spacing: 0.6px; display: flex; gap: 8px; align-items: center; transform: translateZ(20px); }
+        .daily-badge { position: absolute; top: 68px; left: 25px; background: linear-gradient(90deg,#f97316,#d946ef); padding: 6px 10px; border-radius: 14px; font-size: 11px; font-weight: 800; color: white; z-index: 40; transform: translateZ(20px); }
+        .film-logo-container { position: absolute; bottom: 85px; left: 25px; max-width: 60%; z-index: 40; display: flex; flex-direction: column; align-items: flex-start; pointer-events: none; transform: translateZ(50px); }
+        .film-logo { margin-bottom: 4px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.8)); transition: transform 0.3s; }
+        .card.active:hover .film-logo { transform: scale(1.05) rotate(-1deg); }
+
+        .play-btn-big { position: absolute; bottom: 25px; left: 25px; background: #fff; color: #000; border: none; padding: 12px 28px; border-radius: 30px; font-size: 13px; font-weight: 800; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 10px 30px rgba(255,255,255,0.2); z-index: 40; transform: translateZ(40px); }
+        .play-btn-big svg { width: 16px; height: 16px; fill: currentColor; }
+        .play-btn-big:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 15px 40px rgba(255,255,255,0.4); }
+        .read-desc-btn { position: absolute; bottom: 25px; right: 25px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff; padding: 10px 18px; border-radius: 32px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 40; transform: translateZ(30px); }
+        .read-desc-btn:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+
+        .bottom-controls { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 40px; transition: opacity 0.4s ease; transform: translateX(-15px); }
+        .action-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; backdrop-filter: blur(12px); box-shadow: 0 6px 20px rgba(0,0,0,0.45); }
+        .action-btn:hover { transform: scale(1.08); box-shadow: 0 10px 30px rgba(0,0,0,0.55); }
+        .action-btn.dislike:hover { background: rgba(239, 68, 68, 0.10); border-color: rgba(239, 68, 68, 0.35); color: #ef4444; }
+        .action-btn.like { background: rgba(217, 70, 239, 0.06); border-color: rgba(217, 70, 239, 0.12); color: #d946ef; }
+        .action-btn.like:hover { background: rgba(217, 70, 239, 0.12); border-color: rgba(217,70,239,0.28); color: #fff; }
+
+        /* =========================================================
+           OSTATNIO OGLĄDANE & KARTY WIDEO BAZOWE
+           ========================================================= */
+        .recent-section { position: relative; width: 100%; max-width: 1200px; padding: 0 20px; margin-top: 20px; opacity: 0; transform: translateY(60px); transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1), transform 1s cubic-bezier(0.16, 1, 0.3, 1); }
+        .recent-section.is-visible { opacity: 1; transform: translateY(0); }
+        .section-header { margin-bottom: 25px; text-align: left; opacity: 0; }
+        .recent-section.is-visible .section-header { animation: blurUpReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .section-header h3 { font-size: 24px; font-weight: 700; color: #fff; letter-spacing: -0.5px; }
+
+        .recent-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 5px; border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.15); margin-bottom: 25px; }
+        .recent-tab-btn { background: transparent; border: none; color: rgba(255, 255, 255, 0.6); padding: 10px 24px; border-radius: 30px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; }
+        .recent-tab-btn:hover { color: rgba(255, 255, 255, 0.9); }
+        .recent-tab-btn.active { background: #ffffff; color: #000000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+        .recent-grid-wrapper { position: relative; width: 100%; display: none; animation: fadeIn 0.4s ease; }
+        .recent-grid-wrapper.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .recent-grid { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 20px; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none; }
+        .recent-grid::-webkit-scrollbar { display: none; } 
+
+        .recent-item { flex: 0 0 calc(33.333% - 16px); min-width: 300px; scroll-snap-align: start; position: relative; aspect-ratio: 16/9; border-radius: 16px; background-size: cover; background-position: center; cursor: pointer; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(15px); }
+        
+        .recent-section.is-visible .recent-grid:not(.stacked) .recent-item { animation: blurUpReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .recent-section.is-visible .recent-grid:not(.stacked) .recent-item:nth-child(1) { animation-delay: 0.1s; } 
+        .recent-section.is-visible .recent-grid:not(.stacked) .recent-item:nth-child(2) { animation-delay: 0.25s; } 
+        .recent-section.is-visible .recent-grid:not(.stacked) .recent-item:nth-child(3) { animation-delay: 0.4s; } 
+        
+        .recent-grid:not(.stacked):hover .recent-item:not(:hover) { opacity: 0.25 !important; filter: blur(8px) grayscale(0.8) !important; transform: scale(0.92) !important; }
+        .recent-grid:not(.stacked) .recent-item:hover { transform: scale(1.02) !important; border-color: rgba(217, 70, 239, 0.4); box-shadow: 0 20px 40px rgba(0,0,0,0.5); z-index: 2; }
+        .recent-item.removing { transform: scale(0.4) translateY(60px) !important; opacity: 0 !important; min-width: 0 !important; flex: 0 0 0px !important; margin-right: -24px !important; border-width: 0 !important; pointer-events: none !important; }
+        
+        .recent-item::before { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0); z-index: 1; transition: background 0.6s ease; pointer-events: none; }
+        .recent-item:hover::before { background: rgba(0,0,0,0.7); }
+        .recent-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 2; transition: opacity 0.6s ease; pointer-events: none; }
+        .recent-item:hover .recent-video { opacity: 0.5; }
+        .recent-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%); display: flex; flex-direction: column; justify-content: flex-end; padding: 20px; z-index: 3; pointer-events: none;}
+        
+        .magnetic-play { position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; opacity: 0; z-index: 4; pointer-events: none; transition: opacity 0.3s ease, transform 0.1s ease-out; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .magnetic-play svg { width: 22px; height: 22px; fill: currentColor; margin-left: 4px; }
+        .recent-item:hover .magnetic-play { opacity: 1; }
+        .progress-container { position: absolute; bottom: 12px; left: 16px; width: calc(100% - 32px); height: 4px; background: rgba(255,255,255,0.15); z-index: 5; border-radius: 4px; transition: height 0.3s ease, background 0.3s ease, bottom 0.3s ease; }
+        .recent-item:hover .progress-container { height: 6px; background: rgba(255,255,255,0.25); bottom: 14px; }
+        .progress-bar { height: 100%; background: #d946ef; position: relative; border-radius: 4px; box-shadow: 0 0 10px rgba(217, 70, 239, 0.6); transition: box-shadow 0.3s ease; }
+        .recent-item:hover .progress-bar { box-shadow: 0 0 20px rgba(217, 70, 239, 1); }
+        .progress-bar::after { content: ''; position: absolute; right: -4px; top: 50%; transform: translateY(-50%); width: 10px; height: 10px; background: #fff; border-radius: 50%; box-shadow: 0 0 10px rgba(217, 70, 239, 0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s; }
+        .recent-item:hover .progress-bar::after { transform: translateY(-50%) scale(1.3); background: #fdf4ff; }
+        .resume-time-badge { position: absolute; right: 16px; bottom: 28px; background: rgba(10, 10, 15, 0.8); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 8px; z-index: 6; pointer-events: none; transition: transform 0.3s ease, opacity 0.3s ease; }
+        .recent-item:hover .resume-time-badge { transform: translateY(-6px); border-color: rgba(217, 70, 239, 0.4); }
+        .recent-title { font-size: 17px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+        .recent-info { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 500; }
+        .recent-info span.accent { color: #d946ef; font-weight: 700; margin-right: 4px; }
+        .action-menu-btn { position: absolute; top: 15px; right: 15px; width: 32px; height: 32px; background: rgba(0,0,0,0.4); border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity 0.3s ease, background 0.3s; z-index: 10; backdrop-filter: blur(5px); }
+        .recent-item:hover .action-menu-btn { opacity: 1; }
+        .action-menu-btn:hover { background: rgba(255,255,255,0.2); }
+        .blur-action-menu { position: absolute; inset: 0; background: rgba(10, 10, 15, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 15; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; border-radius: 16px; }
+        .blur-action-menu.active { opacity: 1; pointer-events: auto; }
+        .blur-action-menu button { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 75%; max-width: 200px; backdrop-filter: blur(10px); }
+        .blur-action-menu button:hover { background: rgba(217, 70, 239, 0.8); border-color: rgba(255,255,255,0.8); transform: scale(1.05); }
+        .blur-action-menu button.danger-btn:hover { background: rgba(239, 68, 68, 0.8); border-color: rgba(255,255,255,0.8); }
+        .recent-item.expanding-player { position: fixed !important; top: 50% !important; left: 50% !important; width: 100vw !important; height: 100vh !important; transform: translate(-50%, -50%) !important; z-index: 9999 !important; border-radius: 0 !important; transition: all 0.7s cubic-bezier(0.85, 0, 0.15, 1) !important; margin: 0 !important; max-width: none !important; cursor: default !important; }
+        .recent-item.expanding-player .recent-overlay, .recent-item.expanding-player .progress-container, .recent-item.expanding-player .action-menu-btn, .recent-item.expanding-player .resume-time-badge, .recent-item.expanding-player .magnetic-play { opacity: 0 !important; pointer-events: none !important; }
+
+        .pod-recent-item { flex: 0 0 calc(33.333% - 16px); min-width: 300px; scroll-snap-align: start; position: relative; height: 180px; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; cursor: pointer; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); background: rgba(20, 20, 25, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(15px); }
+        .recent-section.is-visible .recent-grid:not(.stacked) .pod-recent-item { animation: blurUpReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .recent-section.is-visible .recent-grid:not(.stacked) .pod-recent-item:nth-child(1) { animation-delay: 0.1s; } 
+        .recent-grid:not(.stacked):hover .pod-recent-item:not(:hover) { opacity: 0.4 !important; filter: blur(4px) grayscale(0.5) !important; transform: scale(0.95) !important; }
+        .recent-grid:not(.stacked) .pod-recent-item:hover { transform: scale(1.02) !important; border-color: rgba(217, 70, 239, 0.4); background: rgba(30, 30, 35, 0.9); box-shadow: 0 15px 30px rgba(0,0,0,0.6); z-index: 2; }
+        
+        .pod-rec-top { display: flex; gap: 15px; align-items: flex-start; }
+        .pod-rec-cover { width: 60px; height: 60px; border-radius: 12px; background-size: cover; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;}
+        .pod-rec-texts { display: flex; flex-direction: column; gap: 4px; }
+        .pod-rec-title { font-size: 16px; font-weight: 600; color: #fff; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .pod-rec-author { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .pod-rec-bottom { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; }
+        .pod-rec-play-btn { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .pod-recent-item:hover .pod-rec-play-btn { background: #d946ef; color: #fff; transform: scale(1.1); }
+        .pod-rec-play-btn svg { width: 14px; height: 14px; fill: currentColor; margin-left: 2px;}
+        .pod-rec-progress { display: flex; align-items: center; gap: 10px; flex-grow: 1; margin-left: 15px; }
+        .pod-rec-bar-bg { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; position: relative; }
+        .pod-rec-bar-fill { height: 100%; background: #d946ef; border-radius: 2px; }
+        .pod-rec-time { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); white-space: nowrap; }
+
+        .scroll-arrow { position: absolute; top: calc(50% - 10px); transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(12px); transition: all 0.3s; z-index: 10; box-shadow: 0 4px 20px rgba(0,0,0,0.6); opacity: 0; pointer-events: none; }
+        .scroll-arrow:hover { background: rgba(255,255,255,0.15); transform: translateY(-50%) scale(1.1); }
+        .scroll-arrow svg { width: 24px; height: 24px; }
+        .scroll-arrow-left { left: -25px; } .scroll-arrow-right { right: -25px; }
+        .scroll-arrow.visible { opacity: 1; pointer-events: auto; }
+
+        /* =========================================================
+           EFEKT STOSU (KARTY) DLA NOWOŚCI
+           ========================================================= */
+        .recent-grid.stacked {
+            gap: 0;
+            padding: 40px 60px 50px 20px; 
+        }
+
+        .recent-grid.stacked .recent-item,
+        .recent-grid.stacked .pod-recent-item {
+            flex: 0 0 380px !important; /* WIĘKSZE KARTY */
+            min-width: 380px !important;
+            margin-left: -220px; /* NACHODZENIE W PROSTEJ LINII */
+            opacity: 0; 
+            transform-origin: center left;
+            box-shadow: -15px 0px 35px rgba(0,0,0,0.6);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.5s ease, opacity 0.5s ease, box-shadow 0.5s ease !important;
+        }
+
+        .recent-grid.stacked .recent-item:first-child,
+        .recent-grid.stacked .pod-recent-item:first-child {
+            margin-left: 0;
+        }
+
+        @keyframes stackedReveal { 
+            from { opacity: 0; filter: blur(20px); transform: translateY(40px) scale(0.9); } 
+            to { opacity: 1; filter: blur(0) brightness(0.8); transform: translateY(0) scale(1); } 
+        }
+
+        .recent-section.is-visible .recent-grid.stacked .recent-item,
+        .recent-section.is-visible .recent-grid.stacked .pod-recent-item {
+            animation: stackedReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Kaskadowe opóźnienia */
+        .recent-section.is-visible .recent-grid.stacked .recent-item:nth-child(1), .recent-section.is-visible .recent-grid.stacked .pod-recent-item:nth-child(1) { animation-delay: 0.1s; } 
+        .recent-section.is-visible .recent-grid.stacked .recent-item:nth-child(2), .recent-section.is-visible .recent-grid.stacked .pod-recent-item:nth-child(2) { animation-delay: 0.2s; } 
+        .recent-section.is-visible .recent-grid.stacked .recent-item:nth-child(3), .recent-section.is-visible .recent-grid.stacked .pod-recent-item:nth-child(3) { animation-delay: 0.3s; } 
+        .recent-section.is-visible .recent-grid.stacked .recent-item:nth-child(4), .recent-section.is-visible .recent-grid.stacked .pod-recent-item:nth-child(4) { animation-delay: 0.4s; } 
+        .recent-section.is-visible .recent-grid.stacked .recent-item:nth-child(5), .recent-section.is-visible .recent-grid.stacked .pod-recent-item:nth-child(5) { animation-delay: 0.5s; } 
+
+        /* HOVER EFEKTY (Rozsuwanie w linii prostej) */
+        .recent-grid.stacked:hover .recent-item:not(:hover),
+        .recent-grid.stacked:hover .pod-recent-item:not(:hover) {
+            filter: brightness(0.3) blur(2px) !important;
+            transform: scale(0.95) !important; /* BRAK ROTACJI */
+            opacity: 0.8 !important;
+        }
+
+        .recent-grid.stacked .recent-item:hover,
+        .recent-grid.stacked .pod-recent-item:hover {
+            transform: translateY(-20px) scale(1.05) !important; /* BRAK ROTACJI, WYSUNIĘCIE W GÓRĘ */
+            filter: brightness(1) blur(0) !important;
+            z-index: 20 !important;
+            opacity: 1 !important;
+            box-shadow: -10px 20px 40px rgba(0,0,0,0.8), 0 0 25px rgba(217, 70, 239, 0.4) !important;
+            border-color: rgba(217, 70, 239, 0.6);
+        }
+
+        /* Rozsunięcie reszty kart po prawej stronie */
+        .recent-grid.stacked .recent-item:hover ~ .recent-item,
+        .recent-grid.stacked .pod-recent-item:hover ~ .pod-recent-item {
+            transform: translateX(240px) scale(0.95) !important; /* PROSTE ODSUNIĘCIE W PRAWO */
+            z-index: 1 !important;
+        }
+
+        /* QUIZ & MODALS */
+        #ui-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 5vh; pointer-events: none; }
+        .glass-panel { width: 100%; max-width: 450px; text-align: center; pointer-events: auto; opacity: 0; transform: translateY(40px); transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); position: absolute; visibility: hidden; }
+        .glass-panel.active { opacity: 1; transform: translateY(0); visibility: visible; }
+        .glass-panel h2 { font-weight: 300; font-size: 28px; margin: 0 0 12px 0; letter-spacing: 0.5px; text-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        .glass-panel p { font-weight: 300; font-size: 15px; color: rgba(255, 255, 255, 0.6); margin: 0 0 45px 0; letter-spacing: 0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .options-container { display: flex; flex-direction: column; gap: 16px; margin-bottom: 30px; padding: 0 20px; }
+        .glass-btn { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: rgba(255, 255, 255, 0.85); padding: 16px 24px; border-radius: 40px; font-size: 15px; font-weight: 300; letter-spacing: 0.5px; font-family: inherit; cursor: pointer; transition: all 0.5s ease; text-align: center; }
+        .glass-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: #ffffff; transform: translateY(-2px); }
+        .progress-dots { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+        .dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); transition: background 0.6s ease; }
+        .dot.active { background: rgba(255, 255, 255, 0.7); }
+        #result-text { font-size: 20px; font-weight: 300; color: #ffffff; margin-top: 20px; letter-spacing: 1px; opacity: 0; transition: opacity 1.5s ease 0.8s; }
+        #result-panel.active #result-text { opacity: 1; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: rgba(20, 20, 22, 0.65); backdrop-filter: blur(40px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; width: 90%; max-width: 600px; padding: 32px; transform: translateY(40px) scale(0.98); transition: transform 0.5s ease; position: relative; overflow: hidden; }
+        .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.05); border: none; width: 30px; height: 30px; border-radius: 50%; color: rgba(255,255,255,0.6); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; transition: background 0.2s; }
+        .modal-header, .modal-trailer, .modal-desc, .modal-actions { position: relative; z-index: 2; }
+        .modal-header { margin-bottom: 24px; } .modal-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }
+        .modal-meta { display: flex; gap: 12px; align-items: center; font-size: 13px; color: rgba(255,255,255,0.5); }
+        .modal-meta .tag { border: 1px solid rgba(255, 255, 255, 0.15); padding: 4px 8px; border-radius: 6px; font-size: 11px; text-transform: uppercase; color: rgba(255, 255, 255, 0.8); }
+        .modal-trailer { width: 100%; aspect-ratio: 16/9; background-color: #000; border-radius: 12px; margin-bottom: 24px; position: relative; background-size: cover; background-position: center; border: 1px solid rgba(255,255,255,0.05); }
+        .play-trailer-btn { position: absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index: 2; width: 54px; height: 54px; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; cursor: pointer; }
+        .modal-desc { font-size: 15px; line-height: 1.5; color: rgba(255,255,255,0.7); margin-bottom: 32px; }
+        .modal-actions { display: flex; gap: 12px; }
+        .btn-primary { background: #ffffff; color: #000000; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #ffffff; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+
+    <header class="navbar" id="main-nav">
+        <div class="nav-left">
+            <div class="logo"><img src="logoedustream.png" alt="EduStream Logo" class="logo-img"></div>
+            
+            <nav class="nav-links">
+                <div class="search-wrapper" id="searchWrapper">
+                    <button class="nav-link search-btn" onclick="toggleSearch(event)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg> 
+                        <span class="search-text">Szukaj</span>
+                    </button>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Tytuł, gatunek, twórca...">
+                </div>
+                
+                <a href="kategorie.html" class="nav-link">Kategorie</a>
+                <a href="watchlist.html" class="nav-link">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link">Live <span style="color: var(--heart-color); margin-left: 4px; font-size: 18px;">•</span></a>
+            </nav>
+        </div>
+
+        <div class="nav-right">
+            <a href="#" class="glass-btn-nav">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                Back to Edunity
+            </a>
+            
+            <a href="settings.html" class="user-profile-link" title="Przejdź do Ustawień EduStream">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User Avatar" class="user-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-icon">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <div class="hero-sticky-container" id="hero-sticky-container">
+        <section class="hero-section" id="hero-section">
+            <div class="film-grain"></div>
+            <div class="bg-layer" id="bg-layer-1"></div>
+            <div class="bg-layer" id="bg-layer-2"></div>
+            <div class="hero-vignette-top"></div>
+            <div class="hero-vignette-bottom"></div>
+
+            <div class="hero-content" id="hero-content-wrapper">
+                <div class="meta-data stagger-anim" id="hero-meta"></div>
+                <h1 class="hero-title stagger-anim" id="hero-title">Ładowanie...</h1>
+                <p class="hero-desc stagger-anim" id="hero-desc"></p>
+
+                <div class="action-row stagger-anim" id="hero-actions">
+                    <button class="play-btn" id="hero-play">
+                        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Oglądaj teraz
+                    </button>
+                    
+                    <button class="icon-btn" title="Obejrzyj zwiastun">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <line x1="2" y1="7" x2="7" y2="7"></line>
+                            <line x1="2" y1="17" x2="7" y2="17"></line>
+                            <line x1="17" y1="17" x2="22" y2="17"></line>
+                            <line x1="17" y1="7" x2="22" y2="7"></line>
+                        </svg>
+                    </button>
+
+                    <button class="icon-btn" title="Więcej informacji" onclick="toggleModalHero()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+
+                    <button class="icon-btn heart-btn" id="heart-btn" title="Dodaj do ulubionych" onclick="toggleHeart()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <button class="carousel-arrow" onclick="nextSlideHero()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+
+            <div class="carousel-indicators" id="indicators-container"></div>
+        </section>
+    </div>
+
+    <div class="info-modal" id="infoModal">
+        <div class="modal-content-hero">
+            <button class="close-modal" onclick="toggleModalHero()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            
+            <h2 class="modal-title-hero" id="info-modal-title">Tytuł</h2>
+            <div class="meta-data" id="modal-meta-hero" style="justify-content: flex-start; margin-bottom: 20px;"></div>
+            
+            <p class="modal-desc-text" id="modal-desc-text">Opis rozszerzony...</p>
+            
+            <div class="modal-details">
+                <strong>Gatunek:</strong> Animacja, Edukacyjny, Przygodowy <br>
+                <strong>Dostępne języki:</strong> Polski (Dubbing), Angielski (Napisy) <br>
+                <strong>Kategorie:</strong> Dla całej rodziny, Nauka przez zabawę
+            </div>
+        </div>
+    </div>
+
+    <div id="part1-bg">
+        <div class="bg-glow"></div>
+        <div class="noise-overlay"></div> 
+        <div class="global-vignette"></div>
+        <div class="bg-typography" id="bg-typo">
+            <div class="bg-word">animacje</div>
+            <div class="bg-word">podcasty filmy</div>
+            <div class="bg-word">rozrywka</div>
+        </div>
+    </div>
+    <div id="part2-bg">
+        <div id="bg-image"></div>
+    </div>
+
+    <div id="part1-content">
+        <div class="recommendation-section" id="main-ui">
+            <div class="headers">
+                <div class="sub-title">Wybrane na podstawie Twoich zainteresowań.</div>
+                <h2 class="main-title">Polecane na dziś</h2>
+                <div class="ai-reasoning">
+                    <span class="ai-sparkle">✧</span>
+                    <span class="typewriter-text" id="ai-text">Analizowanie Twojego gustu...</span>
+                </div>
+            </div>
+
+            <div class="stack-progress-container" id="stack-progress"></div>
+
+            <div class="stack-wrapper">
+                <div class="end-message" id="end-message">
+                    <div id="survey-container">
+                        <div class="end-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <defs>
+                                    <linearGradient id="premium-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#d946ef" />
+                                        <stop offset="100%" stop-color="#8b5cf6" />
+                                    </linearGradient>
+                                </defs>
+                                <path stroke="url(#premium-grad)" d="M12 3v3M12 18v3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M3 12h3M18 12h3M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12"/>
+                                <circle stroke="url(#premium-grad)" cx="12" cy="12" r="4"/>
+                            </svg>
+                        </div>
+                        <h3>Co sądzisz o dzisiejszych rekomendacjach?</h3>
+                        <div class="feedback-options">
+                            <button class="feedback-btn" onclick="submitFeedback('bad')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M16 16s-1.5-2-4-2-4 2-4 2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                                Słabe
+                            </button>
+                            <button class="feedback-btn" onclick="submitFeedback('neutral')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="15" x2="16" y2="15"></line><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                                Takie sobie
+                            </button>
+                            <button class="feedback-btn" onclick="submitFeedback('good')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2"></path><line x1="9" y1="9" x2="9.01" y2="9"></line><line x1="15" y1="9" x2="15.01" y2="9"></line></svg>
+                                Rewelacja!
+                            </button>
+                        </div>
+                    </div>
+                    <div id="thank-you-container" class="thank-you-msg">
+                        <div class="end-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <defs>
+                                    <linearGradient id="premium-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#4ade80" />
+                                        <stop offset="100%" stop-color="#3b82f6" />
+                                    </linearGradient>
+                                </defs>
+                                <path stroke="url(#premium-grad2)" d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                <polyline stroke="url(#premium-grad2)" points="22 4 12 14.01 9 11.01"/>
+                            </svg>
+                        </div>
+                        <h3>Dzięki za opinię!</h3>
+                        <p>Pomoże nam to lepiej dobierać filmy i seriale specjalnie dla Ciebie.</p>
+                        <button class="btn-restart" onclick="resetStack()">Zacznij od nowa</button>
+                    </div>
+                </div>
+                
+                <div class="card-stack" id="card-stack"></div>
+            </div>
+
+            <div class="bottom-controls" id="bottom-controls">
+                <button class="action-btn dislike" title="Omiń" onclick="handleDislike()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+                <button class="action-btn like" title="Chcę to obejrzeć!" onclick="handleLike()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="recent-section" id="nowosci-section" style="margin-bottom: 60px;">
+            <div class="section-header">
+                <div class="sub-title">Świeżo dodane na platformie</div>
+                <h3>Nowości</h3>
+                
+                <div class="recent-tabs">
+                    <button class="recent-tab-btn active" onclick="switchNowosciTab('nowosci-filmy', this)">Filmy pełnometrażowe</button>
+                    <button class="recent-tab-btn" onclick="switchNowosciTab('nowosci-seriale', this)">Seriale</button>
+                    <button class="recent-tab-btn" onclick="switchNowosciTab('nowosci-bajki', this)">Bajki</button>
+                    <button class="recent-tab-btn" onclick="switchNowosciTab('nowosci-filmiki', this)">Filmiki</button>
+                    <button class="recent-tab-btn" onclick="switchNowosciTab('nowosci-podcasty', this)">Podcasty</button>
+                </div>
+            </div>
+            
+            <div class="recent-grid-wrapper active" id="nowosci-filmy">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('nowosci-grid-filmy', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid stacked" id="nowosci-grid-filmy">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=2070&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Kino Akcji 2026</div>
+                            <div class="recent-info"><span class="accent">Film</span> • Premiera dzisiaj</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1925&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Kosmiczny Wędrowiec</div>
+                            <div class="recent-info"><span class="accent">Film</span> • Sci-Fi</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=2069&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Tajemnica Pustyni</div>
+                            <div class="recent-info"><span class="accent">Film</span> • Przygodowy</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                     <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Zaginiony Świat</div>
+                            <div class="recent-info"><span class="accent">Film</span> • Thriller</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('nowosci-grid-filmy', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="nowosci-seriale">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('nowosci-grid-seriale', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid stacked" id="nowosci-grid-seriale">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Cyber Miasto</div>
+                            <div class="recent-info"><span class="accent">Nowy Odcinek</span> • Premiera Sezonu</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('nowosci-grid-seriale', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="nowosci-bajki">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('nowosci-grid-bajki', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid stacked" id="nowosci-grid-bajki">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1545642412-25983226db97?q=80&w=2000&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Magiczny Las</div>
+                            <div class="recent-info"><span class="accent" style="color: #ef4444;">Dla dzieci</span> • Dzisiejsza nowość</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('nowosci-grid-bajki', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="nowosci-filmiki">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('nowosci-grid-filmiki', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid stacked" id="nowosci-grid-filmiki">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=2071&auto=format&fit=crop');" onclick="goToMiniaturka(event)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Vlog: Kulisy Tworzenia</div>
+                            <div class="recent-info"><span class="accent">Edukacja</span> • 5 min</div>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('nowosci-grid-filmiki', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="nowosci-podcasty">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('nowosci-grid-podcasty', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid stacked" id="nowosci-grid-podcasty">
+                    <div class="pod-recent-item" onclick="goToMiniaturka(event)">
+                        <div class="pod-rec-top">
+                            <div class="pod-rec-cover" style="background-image: url('https://images.unsplash.com/photo-1456324504439-367cee3b3c32?q=80&w=500&auto=format&fit=crop');"></div>
+                            <div class="pod-rec-texts">
+                                <h4 class="pod-rec-title">Przyszłość Technologii</h4>
+                                <span class="pod-rec-author">Nowy Odcinek</span>
+                            </div>
+                        </div>
+                        <div class="pod-rec-bottom">
+                            <div class="pod-rec-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <div class="pod-rec-progress">
+                                <span class="pod-rec-time">00:00 / 45:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pod-recent-item" onclick="goToMiniaturka(event)">
+                        <div class="pod-rec-top">
+                            <div class="pod-rec-cover" style="background-image: url('https://images.unsplash.com/photo-1499506443831-2fb07ceb22e1?q=80&w=500&auto=format&fit=crop');"></div>
+                            <div class="pod-rec-texts">
+                                <h4 class="pod-rec-title">Psychologia Sukcesu</h4>
+                                <span class="pod-rec-author">Odcinek Bonusowy</span>
+                            </div>
+                        </div>
+                        <div class="pod-rec-bottom">
+                            <div class="pod-rec-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <div class="pod-rec-progress">
+                                <span class="pod-rec-time">00:00 / 30:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('nowosci-grid-podcasty', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+        <div class="recent-section">
+            <div class="section-header">
+                <div class="sub-title">Kontynuuj podróż</div>
+                <h3>Ostatnio oglądane</h3>
+                
+                <div class="recent-tabs">
+                    <button class="recent-tab-btn active" onclick="switchRecentTab('recent-filmy', this)">Filmy i Seriale</button>
+                    <button class="recent-tab-btn" onclick="switchRecentTab('recent-bajki', this)">Bajki i Animacje</button>
+                    <button class="recent-tab-btn" onclick="switchRecentTab('recent-podcasty', this)">Podcasty</button>
+                </div>
+            </div>
+            
+            <div class="recent-grid-wrapper active" id="recent-filmy">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('recent-grid-filmy', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+
+                <div class="recent-grid" id="recent-grid-filmy">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=1925&auto=format&fit=crop');" onclick="expandRecentToPlayer(event, this)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Interstellar Voyage</div>
+                            <div class="recent-info"><span class="accent">S01 E03</span> • Zostało 45 minut</div>
+                        </div>
+                        <button class="action-menu-btn" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                        <div class="blur-action-menu">
+                            <button onclick="expandRecentFromMenu(event, this)">Wznów odtwarzanie</button>
+                            <button onclick="openResumeModal(event, this)">Szczegóły odcinka</button>
+                            <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                        <div class="resume-time-badge">01:45:20</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: 65%;"></div></div>
+                    </div>
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1509281373149-e957c6296406?q=80&w=2069&auto=format&fit=crop');" onclick="expandRecentToPlayer(event, this)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">The Cyber Runner</div>
+                            <div class="recent-info"><span class="accent">S02 E04</span> • Błędy w kodzie</div>
+                        </div>
+                        <button class="action-menu-btn" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                        <div class="blur-action-menu">
+                            <button onclick="expandRecentFromMenu(event, this)">Wznów odtwarzanie</button>
+                            <button onclick="openResumeModal(event, this)">Szczegóły odcinka</button>
+                            <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                        <div class="resume-time-badge">00:12:05</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: 90%;"></div></div>
+                    </div>
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop');" onclick="expandRecentToPlayer(event, this)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Głębia Horyzontu</div>
+                            <div class="recent-info"><span class="accent">Film</span> • Zostało 25 minut</div>
+                        </div>
+                        <button class="action-menu-btn" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                        <div class="blur-action-menu">
+                            <button onclick="expandRecentFromMenu(event, this)">Wznów odtwarzanie</button>
+                            <button onclick="openResumeModal(event, this)">Szczegóły filmu</button>
+                            <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                        <div class="resume-time-badge">00:25:30</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: 50%;"></div></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('recent-grid-filmy', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="recent-bajki">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('recent-grid-bajki', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid" id="recent-grid-bajki">
+                    <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1545642412-25983226db97?q=80&w=2000&auto=format&fit=crop');" onclick="expandRecentToPlayer(event, this)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Strażnicy Wulkanów</div>
+                            <div class="recent-info"><span class="accent" style="color: #ef4444;">Wiek 7+</span> • Zostało 12 minut</div>
+                        </div>
+                        <button class="action-menu-btn" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                        <div class="blur-action-menu">
+                            <button onclick="expandRecentFromMenu(event, this)">Wznów odtwarzanie</button>
+                            <button onclick="openResumeModal(event, this)">Szczegóły odcinka</button>
+                            <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                        <div class="resume-time-badge">00:10:05</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: 80%;"></div></div>
+                    </div>
+                     <div class="recent-item" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=2000&auto=format&fit=crop');" onclick="expandRecentToPlayer(event, this)">
+                        <video class="recent-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="recent-overlay">
+                            <div class="recent-title">Superbohaterowie Fizyki</div>
+                            <div class="recent-info"><span class="accent" style="color: #ef4444;">Wiek 6+</span> • Zostało 5 minut</div>
+                        </div>
+                        <button class="action-menu-btn" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                        <div class="blur-action-menu">
+                            <button onclick="expandRecentFromMenu(event, this)">Wznów odtwarzanie</button>
+                            <button onclick="openResumeModal(event, this)">Szczegóły odcinka</button>
+                            <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                        </div>
+                        <div class="magnetic-play"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                        <div class="resume-time-badge">00:18:20</div>
+                        <div class="progress-container"><div class="progress-bar" style="width: 95%;"></div></div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('recent-grid-bajki', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+
+            <div class="recent-grid-wrapper" id="recent-podcasty">
+                <button class="scroll-arrow scroll-arrow-left" onclick="scrollRecent('recent-grid-podcasty', -320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <div class="recent-grid" id="recent-grid-podcasty">
+                    <div class="pod-recent-item" onclick="window.location.href='podcasty.html'">
+                        <div class="pod-rec-top">
+                            <div class="pod-rec-cover" style="background-image: url('https://images.unsplash.com/photo-1456324504439-367cee3b3c32?q=80&w=500&auto=format&fit=crop');"></div>
+                            <div class="pod-rec-texts">
+                                <h4 class="pod-rec-title">Trening Mentalny</h4>
+                                <span class="pod-rec-author">Odcinek 14</span>
+                            </div>
+                            <button class="action-menu-btn" style="position: relative; top:0; right:0; opacity: 1; border-color: rgba(255,255,255,0.1);" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                            <div class="blur-action-menu">
+                                <button onclick="event.stopPropagation(); alert('Wznawiam podcast')">Wznów słuchanie</button>
+                                <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                            </div>
+                        </div>
+                        <div class="pod-rec-bottom">
+                            <div class="pod-rec-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <div class="pod-rec-progress">
+                                <div class="pod-rec-bar-bg"><div class="pod-rec-bar-fill" style="width: 45%;"></div></div>
+                                <span class="pod-rec-time">15:20 / 34:10</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pod-recent-item" onclick="window.location.href='podcasty.html'">
+                        <div class="pod-rec-top">
+                            <div class="pod-rec-cover" style="background-image: url('https://images.unsplash.com/photo-1499506443831-2fb07ceb22e1?q=80&w=500&auto=format&fit=crop');"></div>
+                            <div class="pod-rec-texts">
+                                <h4 class="pod-rec-title">Nawyk Wygrywania</h4>
+                                <span class="pod-rec-author">Odcinek 22</span>
+                            </div>
+                            <button class="action-menu-btn" style="position: relative; top:0; right:0; opacity: 1; border-color: rgba(255,255,255,0.1);" onclick="toggleBlurMenu(event, this)"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+                            <div class="blur-action-menu">
+                                <button onclick="event.stopPropagation(); alert('Wznawiam podcast')">Wznów słuchanie</button>
+                                <button class="danger-btn" onclick="removeRecentItem(event, this)">Usuń z historii</button>
+                            </div>
+                        </div>
+                        <div class="pod-rec-bottom">
+                            <div class="pod-rec-play-btn"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <div class="pod-rec-progress">
+                                <div class="pod-rec-bar-bg"><div class="pod-rec-bar-fill" style="width: 80%;"></div></div>
+                                <span class="pod-rec-time">36:00 / 45:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button class="scroll-arrow scroll-arrow-right visible" onclick="scrollRecent('recent-grid-podcasty', 320)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="transition-section">
+            <h2 class="transition-text">
+                nie wybieraj filmu.
+                <span class="highlight">wybierz emocje.</span>
+            </h2>
+        </div>
+
+    </div>
+
+    <div id="part2-content">
+        <div id="ui-container">
+            <div class="glass-panel" id="q1-panel">
+                <h2>Jak się dzisiaj czujesz?</h2>
+                <p>Wybierz stan, który z Tobą rezonuje.</p>
+                <div class="options-container">
+                    <button class="glass-btn" onclick="nextQuestion(1, 'Spokojnie')">Wyciszony i zrelaksowany</button>
+                    <button class="glass-btn" onclick="nextQuestion(1, 'Ciekawie')">Szukam nowej wiedzy</button>
+                    <button class="glass-btn" onclick="nextQuestion(1, 'Energetycznie')">Gotowy do działania</button>
+                </div>
+                <div class="progress-dots">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel" id="q2-panel">
+                <h2>Gdzie kierujesz swoje myśli?</h2>
+                <p>Wskaż kierunek swojej podróży.</p>
+                <div class="options-container">
+                    <button class="glass-btn" onclick="nextQuestion(2, 'Odkrywanie')">Chcę zgłębiać koncepcje</button>
+                    <button class="glass-btn" onclick="nextQuestion(2, 'Tworzenie')">Chcę budować coś nowego</button>
+                    <button class="glass-btn" onclick="nextQuestion(2, 'Odpoczynek')">Potrzebuję przestrzeni</button>
+                </div>
+                <div class="progress-dots">
+                    <div class="dot"></div>
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel" id="q3-panel">
+                <h2>Jak chcesz to odkryć?</h2>
+                <p>Określ swój format odbioru.</p>
+                <div class="options-container">
+                    <button class="glass-btn" onclick="finishQuiz('Wizualnie')">Przez obrazy i przestrzeń</button>
+                    <button class="glass-btn" onclick="finishQuiz('Praktycznie')">Poprzez działanie</button>
+                    <button class="glass-btn" onclick="finishQuiz('Analitycznie')">Analizując surowe dane</button>
+                </div>
+                <div class="progress-dots">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot active"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel" id="result-panel">
+                <h2>Kalibracja zakończona</h2>
+                <p>Ustalono współrzędne docelowe.</p>
+                <div id="result-text">Cel: Obliczanie...</div>
+                <br><br>
+                <button class="glass-btn" id="start-journey-btn" onclick="startJourney()">Rozpocznij Podróż</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Tytuł Filmu</h3>
+                <div class="modal-meta"><span class="tag" id="modal-tag">Premium</span> <span id="modal-year">2024</span> <span id="modal-duration">2h 15m</span></div>
+            </div>
+            <div class="modal-trailer" id="modal-trailer-bg">
+                <div class="play-trailer-btn" id="play-trailer-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+            </div>
+            <p class="modal-desc" id="modal-desc">Opis filmu.</p>
+            <div class="modal-actions"><button class="btn-primary" id="watch-now-btn">Oglądaj teraz</button><button class="btn-secondary" id="add-to-list">+ Moja lista</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="resume-modal-overlay">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px 30px;">
+            <button class="modal-close" onclick="closeResumeModal()"><svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            <div class="modal-header" style="margin-bottom: 15px;">
+                <h3 class="modal-title" id="resume-modal-title" style="font-size: 24px;">Tytuł</h3>
+                <div class="recent-info" id="resume-modal-info" style="color: rgba(255,255,255,0.5);">S01 E03</div>
+            </div>
+            <p class="modal-desc" style="font-size: 14px; margin-bottom: 30px;">Wybierz, jak chcesz kontynuować seans.</p>
+            <div class="modal-actions" style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn-primary" id="btn-continue" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Kontynuuj
+                </button>
+                <button class="btn-secondary" onclick="startFresh()" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg> Zacznij od nowa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Funkcja dedykowana dla kart z sekcji "Nowości" - otwiera miniaturka.html
+        function goToMiniaturka(e) {
+            // Zabezpieczenie by nie przechodziło na nową stronę, gdy ktoś kliknie w menu (trzy kropki)
+            if(e.target.closest('.blur-action-menu') || e.target.closest('.action-menu-btn')) return;
+            window.location.href = 'miniaturka.html';
+        }
+
+        // LOGIKA HERO SLIDERA
+        const heroSlides = [
+            {
+                title: "Mali Odkrywcy",
+                desc: "„Mali Odkrywcy” to pełna magii i przygód animowana opowieść, w której ciekawość zmienia się w niezwykłe odkrycia. Każdy odcinek to filmowa podróż do świata tajemnic, nauki i wyobraźni.",
+                metaMatch: "98%", age: "7+", year: "2026", duration: "1 Sezon",
+                image: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop",
+                liked: false
+            },
+            {
+                title: "Kosmiczna Akademia",
+                desc: "Dołącz do załogi młodych astronautów i poznaj zjawiskowe tajemnice Układu Słonecznego. Wyrusz z nami w fascynującą, edukacyjną podróż na sam kraniec naszej galaktyki!",
+                metaMatch: "100%", age: "10+", year: "2025", duration: "1h 45m",
+                image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop",
+                liked: false
+            },
+            {
+                title: "Mistrzowie Kodu",
+                desc: "Wkrocz do cyfrowego świata i naucz się myśleć jak prawdziwy programista. Porywająca animowana seria ucząca analitycznego myślenia, kreatywności i rozwiązywania problemów.",
+                metaMatch: "95%", age: "12+", year: "2026", duration: "2 Sezony",
+                image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop",
+                liked: false
+            },
+            {
+                title: "Sekrety Ziemi",
+                desc: "Fascynująca seria dokumentalna ukazująca niesamowitą potęgę natury, zmiany klimatyczne oraz innowacyjne sposoby młodych ludzi na ochronę naszej wspaniałej planety.",
+                metaMatch: "92%", age: "ALL", year: "2024", duration: "50m",
+                image: "https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=2070&auto=format&fit=crop",
+                liked: false
+            }
+        ];
+
+        let currentSlideIndex = 0;
+        let slideTimer;
+        const TIME_PER_SLIDE = 7000; 
+        let isHeroModalOpen = false;
+
+        const bg1 = document.getElementById('bg-layer-1');
+        const bg2 = document.getElementById('bg-layer-2');
+        let activeBg = bg1;
+        const animatedElements = [
+            document.getElementById('hero-meta'), document.getElementById('hero-title'),
+            document.getElementById('hero-desc'), document.getElementById('hero-actions')
+        ];
+        
+        function toggleSearch(e) {
+            e.stopPropagation();
+            const wrapper = document.getElementById('searchWrapper');
+            const input = document.getElementById('searchInput');
+            wrapper.classList.toggle('active');
+            if(wrapper.classList.contains('active')) { setTimeout(() => input.focus(), 200); }
+        }
+
+        document.addEventListener('click', (e) => {
+            const searchWrapper = document.getElementById('searchWrapper');
+            if(searchWrapper && searchWrapper.classList.contains('active') && !searchWrapper.contains(e.target)) {
+                searchWrapper.classList.remove('active');
+            }
+        });
+
+        // Paralaksa kursora w Hero
+        document.addEventListener('mousemove', (e) => {
+            if(isHeroModalOpen || window.scrollY > 100) return; 
+            const content = document.getElementById('hero-content-wrapper');
+            if(!content) return;
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 60;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 60;
+            content.style.transform = `translate(${xAxis}px, ${yAxis}px)`;
+            
+            // Zachowujemy obecny scale(1.07) animacji Ken Burns
+            const matrix1 = new WebKitCSSMatrix(window.getComputedStyle(bg1).transform);
+            const matrix2 = new WebKitCSSMatrix(window.getComputedStyle(bg2).transform);
+            
+            bg1.style.transform = `translate(${-xAxis / 2}px, ${-yAxis / 2}px) scale(${Math.max(1.02, matrix1.a)})`; 
+            bg2.style.transform = `translate(${-xAxis / 2}px, ${-yAxis / 2}px) scale(${Math.max(1.02, matrix2.a)})`; 
+        });
+
+        function toggleHeart() {
+            const slide = heroSlides[currentSlideIndex];
+            slide.liked = !slide.liked;
+            const heartBtn = document.getElementById('heart-btn');
+            if (slide.liked) heartBtn.classList.add('liked');
+            else heartBtn.classList.remove('liked');
+        }
+
+        function toggleModalHero() {
+            const modal = document.getElementById('infoModal');
+            isHeroModalOpen = !isHeroModalOpen;
+            if(isHeroModalOpen) {
+                const slide = heroSlides[currentSlideIndex];
+                document.getElementById('info-modal-title').innerText = slide.title;
+                document.getElementById('modal-desc-text').innerText = slide.desc + " Tutaj możesz przeczytać o wiele więcej szczegółów na temat tej wspaniałej produkcji, zgłębić historię twórców i poznać ciekawostki ze świata edukacji.";
+                document.getElementById('modal-meta-hero').innerHTML = `
+                    <span class="meta-match">${slide.metaMatch} Zgodności</span>
+                    <span class="meta-dot">&bull;</span><span>${slide.year}</span>
+                    <span class="meta-dot">&bull;</span><span class="meta-badge">${slide.age}</span>
+                    <span class="meta-dot">&bull;</span><span>${slide.duration}</span>
+                `;
+                modal.classList.add('active');
+                clearInterval(slideTimer); 
+            } else {
+                modal.classList.remove('active');
+                startTimer(); 
+            }
+        }
+
+        function createIndicators() {
+            const container = document.getElementById('indicators-container');
+            if(!container) return;
+            container.innerHTML = '';
+            heroSlides.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'indicator';
+                dot.innerHTML = '<div class="indicator-fill"></div>';
+                if (index === 0) dot.classList.add('active');
+                dot.onclick = () => goToSlide(index);
+                container.appendChild(dot);
+            });
+        }
+
+        function updateDOM() {
+            const slide = heroSlides[currentSlideIndex];
+            animatedElements.forEach(el => { if(el) el.classList.remove('visible'); });
+
+            const nextBg = activeBg === bg1 ? bg2 : bg1;
+            nextBg.style.backgroundImage = `url('${slide.image}')`;
+
+            // Efekt płynnego i długiego crossfade'a
+            nextBg.style.zIndex = "1";
+            activeBg.style.zIndex = "0";
+            nextBg.classList.add('active');
+            
+            const oldBg = activeBg;
+            setTimeout(() => { oldBg.classList.remove('active'); }, 1500); 
+            
+            activeBg = nextBg;
+
+            // Resetowanie animacji białego paska (z użyciem reflow)
+            const dots = document.querySelectorAll('.indicator');
+            dots.forEach(dot => { 
+                dot.classList.remove('active'); 
+                const fill = dot.querySelector('.indicator-fill');
+                if(fill) {
+                    fill.style.animation = 'none'; 
+                    void fill.offsetWidth;         
+                    fill.style.animation = null;   
+                }
+            });
+
+            // Opóźnienie na tekst
+            setTimeout(() => {
+                if(animatedElements[0]) animatedElements[0].innerHTML = `
+                    <span class="meta-match">${slide.metaMatch} Zgodności</span><span class="meta-dot">&bull;</span>
+                    <span>${slide.year}</span><span class="meta-dot">&bull;</span>
+                    <span class="meta-badge">${slide.age}</span><span class="meta-dot">&bull;</span>
+                    <span>${slide.duration}</span><span class="meta-dot">&bull;</span><span class="meta-badge">HD</span>
+                `;
+                if(animatedElements[1]) animatedElements[1].innerText = slide.title;
+                if(animatedElements[2]) animatedElements[2].innerText = slide.desc;
+                
+                const heartBtn = document.getElementById('heart-btn');
+                if (slide.liked) heartBtn.classList.add('liked');
+                else heartBtn.classList.remove('liked');
+
+                animatedElements.forEach(el => { if(el) el.classList.add('visible'); });
+                if(dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
+            }, 600);
+        }
+
+        function nextSlideHero() { currentSlideIndex = (currentSlideIndex + 1) % heroSlides.length; updateDOM(); resetTimer(); }
+        function goToSlide(index) { if(index === currentSlideIndex) return; currentSlideIndex = index; updateDOM(); resetTimer(); }
+        function startTimer() { slideTimer = setInterval(nextSlideHero, TIME_PER_SLIDE); }
+        function resetTimer() { clearInterval(slideTimer); startTimer(); }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createIndicators();
+            if(bg1) {
+                bg1.style.backgroundImage = `url('${heroSlides[0].image}')`;
+                bg1.classList.add('active'); 
+            }
+            if(animatedElements[0]) animatedElements[0].innerHTML = `<span class="meta-match">${heroSlides[0].metaMatch} Zgodności</span><span class="meta-dot">&bull;</span><span>${heroSlides[0].year}</span><span class="meta-dot">&bull;</span><span class="meta-badge">${heroSlides[0].age}</span><span class="meta-dot">&bull;</span><span>${heroSlides[0].duration}</span><span class="meta-dot">&bull;</span><span class="meta-badge">HD</span>`;
+            if(animatedElements[1]) animatedElements[1].innerText = heroSlides[0].title;
+            if(animatedElements[2]) animatedElements[2].innerText = heroSlides[0].desc;
+            
+            const heartBtn = document.getElementById('heart-btn');
+            if (heroSlides[0].liked) heartBtn.classList.add('liked'); else heartBtn.classList.remove('liked');
+            
+            setTimeout(() => { animatedElements.forEach(el => { if(el) el.classList.add('visible'); }); }, 100);
+            startTimer();
+        });
+
+
+        // ==========================================
+        // LOGIKA KART UI (Tinder)
+        // ==========================================
+        window.isGalacticVisible = false;
+        let audioCtxUI;
+        function initAudioUI() { if (!audioCtxUI) audioCtxUI = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtxUI.state === 'suspended') audioCtxUI.resume(); }
+        function playSwoosh() {
+            if(!audioCtxUI) return;
+            const osc = audioCtxUI.createOscillator(); const gain = audioCtxUI.createGain(); const filter = audioCtxUI.createBiquadFilter();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(150, audioCtxUI.currentTime); osc.frequency.exponentialRampToValueAtTime(40, audioCtxUI.currentTime + 0.3);
+            filter.type = 'lowpass'; filter.frequency.value = 400;
+            gain.gain.setValueAtTime(0, audioCtxUI.currentTime); gain.gain.linearRampToValueAtTime(0.1, audioCtxUI.currentTime + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, audioCtxUI.currentTime + 0.4);
+            osc.connect(filter); filter.connect(gain); gain.connect(audioCtxUI.destination); osc.start(); osc.stop(audioCtxUI.currentTime + 0.4);
+        }
+
+        const slidesUI = [
+            { id: 1, image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=2094&auto=format&fit=crop', colors: {r1: 0, g1: 150, b1: 255, r2: 255, g2: 0, b2: 150, r3: 50, g3: 0, b3: 200}, aiText: "Ponieważ lubisz mroczne kino Sci-Fi...", logoHtml: `<div class="film-logo" style="font-family: 'Orbitron', sans-serif; font-size: 32px; color: #fff; letter-spacing: 4px;">NEON NIGHTS</div>`, tag: 'Ekskluzywne', title: 'Neonowe Noce', year: '2024', duration: '1h 45m', desc: 'Thriller cyberpunkowy w świecie, w którym ciemność jest towarem.', aiRecommended: true, daily: true }, 
+            { id: 2, image: 'https://images.unsplash.com/photo-1618519764620-7403abdbdf9c?q=80&w=2070&auto=format&fit=crop', colors: {r1: 255, g1: 50, b1: 50, r2: 255, g2: 150, b2: 0, r3: 100, g3: 0, b3: 0}, aiText: "Spektakularne efekty wizualne na wieczór...", logoHtml: `<div class="film-logo" style="font-family: 'Cinzel', serif; font-size: 36px; color: #ffeb3b; letter-spacing: 2px;">MARTIAN DUST</div>`, tag: 'Nowość', title: 'Dźwięki Kosmosu', year: '2023', duration: '50m', desc: 'Seria dokumentalna o odległych zakątkach wszechświata.', aiRecommended: true },
+            { id: 3, image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop', colors: {r1: 0, g1: 255, b1: 150, r2: 0, g2: 100, b2: 255, r3: 0, g3: 50, b3: 100}, aiText: "Thriller hakerski w Twoim klimacie...", logoHtml: `<div class="film-logo" style="font-family: 'Teko', sans-serif; font-size: 48px; color: #4ade80; line-height: 0.8;">CYBER<br>PROTOCOL</div>`, tag: 'Dla Ciebie', title: 'Kod Architekta', year: '2024', duration: '2h 10m', desc: 'Młoda programistka odkrywa ukrytą wiadomość w starym kodzie.', aiRecommended: false },
+            { id: 4, image: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop', colors: {r1: 150, g1: 150, b1: 255, r2: 50, g2: 50, b2: 150, r3: 10, g3: 10, b3: 50}, aiText: "Epicka podróż na koniec wszechświata...", logoHtml: `<div class="film-logo" style="font-family: 'Inter', sans-serif; font-weight: 900; font-size: 28px; color: #fff; letter-spacing: -1px;">EVENT HORIZON</div>`, tag: 'Premium', title: 'Głębia Horyzontu', year: '2022', duration: '1h 55m', desc: 'Ostatnia załoga badawcza szuka nowego domu dla ludzkości.' }
+        ];
+
+        let currentUIIndex = 0;
+        let isUIAnimating = false;
+        const cardStack = document.getElementById('card-stack');
+        const endMessage = document.getElementById('end-message');
+        const bottomControls = document.getElementById('bottom-controls');
+        const stackProgress = document.getElementById('stack-progress');
+        const aiTextEl = document.getElementById('ai-text');
+        const root = document.documentElement;
+
+        const surveyContainer = document.getElementById('survey-container');
+        const thankYouContainer = document.getElementById('thank-you-container');
+
+        document.body.addEventListener('pointerdown', initAudioUI, {once: true});
+
+        function submitFeedback(reaction) { surveyContainer.style.display = 'none'; thankYouContainer.style.display = 'flex'; }
+
+        let typingTimeout;
+        function typeAIReason(text) {
+            clearTimeout(typingTimeout); aiTextEl.innerText = ''; let i = 0;
+            function type() { if (i < text.length) { aiTextEl.innerText += text.charAt(i); i++; typingTimeout = setTimeout(type, 35); } } type();
+        }
+
+        function updateAmbilight(slide) {
+            root.style.setProperty('--r1', slide.colors.r1); root.style.setProperty('--g1', slide.colors.g1); root.style.setProperty('--b1', slide.colors.b1);
+            root.style.setProperty('--r2', slide.colors.r2); root.style.setProperty('--g2', slide.colors.g2); root.style.setProperty('--b2', slide.colors.b2);
+            root.style.setProperty('--r3', slide.colors.r3); root.style.setProperty('--g3', slide.colors.g3); root.style.setProperty('--b3', slide.colors.b3);
+        }
+
+        function initStack() {
+            cardStack.innerHTML = ''; stackProgress.innerHTML = '';
+            surveyContainer.style.display = 'flex'; thankYouContainer.style.display = 'none';
+            document.getElementById('bg-typo').style.opacity = '1';
+
+            slidesUI.forEach((slide, index) => {
+                const dot = document.createElement('div'); dot.className = 'progress-line'; stackProgress.appendChild(dot);
+                const card = document.createElement('div'); card.className = 'card'; card.dataset.index = index;
+                card.innerHTML = `
+                    <div class="card-bg" style="background-image: url('${slide.image}');">
+                        <video class="card-video" src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-overlay-gradient"></div><div class="card-glare"></div><div class="swipe-overlay dislike-overlay"></div><div class="swipe-overlay like-overlay"></div>
+                        <div class="card-ui">
+                            <div class="premium-badge">${slide.tag}</div>
+                            ${slide.aiRecommended ? `<div class="ai-badge">AI ➜ Recommend</div>` : ''}
+                            ${slide.daily ? `<div class="daily-badge">Daily Pick</div>` : ''}
+                            <div class="film-logo-container">${slide.logoHtml}</div>
+                            <button class="play-btn-big" onclick="expandToPlayer(event, ${index})"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Oglądaj</button>
+                            <button class="read-desc-btn" data-index="${index}" type="button">Przeczytaj opis <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></button>
+                        </div>
+                    </div>`;
+                card.addEventListener('mouseenter', () => { initAudioUI(); if(card.classList.contains('active')) { const vid = card.querySelector('video'); if(vid) vid.play().catch(()=>{}); } });
+                card.addEventListener('mouseleave', () => { const vid = card.querySelector('video'); if(vid) { vid.pause(); vid.currentTime = 0; } });
+                card.addEventListener('mousemove', (e) => handleMouseMove(e, card));
+                card.addEventListener('mouseleave', () => handleMouseLeave(card));
+                card.addEventListener('pointerdown', (e) => pointerDown(e, card));
+                cardStack.appendChild(card);
+            });
+            updateStack();
+        }
+
+        function updateStack() {
+            const cards = document.querySelectorAll('.card'); const lines = document.querySelectorAll('.progress-line'); const total = slidesUI.length;
+            if (currentUIIndex >= total) {
+                cards.forEach(card => card.style.visibility = 'hidden');
+                lines.forEach(line => { line.classList.remove('active'); line.classList.add('viewed'); });
+                endMessage.classList.add('visible'); bottomControls.style.opacity = '0'; bottomControls.style.pointerEvents = 'none';
+                aiTextEl.innerText = "To by było na tyle."; document.getElementById('bg-typo').style.opacity = '0.2'; return;
+            }
+            playSwoosh(); typeAIReason(slidesUI[currentUIIndex].aiText); updateAmbilight(slidesUI[currentUIIndex]);
+            endMessage.classList.remove('visible'); bottomControls.style.opacity = '1'; bottomControls.style.pointerEvents = 'auto';
+
+            lines.forEach((line, index) => { line.classList.remove('active', 'viewed'); if (index < currentUIIndex) line.classList.add('viewed'); if (index === currentUIIndex) line.classList.add('active'); });
+
+            cards.forEach((card, index) => {
+                let diff = index - currentUIIndex; 
+                if (diff >= 0) {
+                    card.classList.remove('active', 'behind', 'behind-2', 'behind-3', 'swipe-left', 'swipe-right');
+                    card.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease, filter 0.6s ease, visibility 0.6s';
+                    card.style.setProperty('--rx', `0deg`); card.style.setProperty('--ry', `0deg`); card.style.transform = ''; 
+                    if (diff === 0) card.classList.add('active'); else if (diff === 1) card.classList.add('behind'); else if (diff === 2) card.classList.add('behind-2'); else if (diff === 3) card.classList.add('behind-3'); else card.style.visibility = 'hidden'; 
+                } else { if(!card.classList.contains('expanding-player')) card.style.visibility = 'hidden'; }
+            });
+        }
+
+        function resetStack() { currentUIIndex = 0; initStack(); }
+
+        function handleMouseMove(e, card) {
+            if (!card.classList.contains('active')) return;
+            const rect = card.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            card.style.setProperty('--gx', `${(x / rect.width) * 100}%`); card.style.setProperty('--gy', `${(y / rect.height) * 100}%`);
+            const centerX = rect.width / 2; const centerY = rect.height / 2;
+            const rotateX = ((y - centerY) / centerY) * -12; const rotateY = ((x - centerX) / centerX) * 12;
+            card.style.setProperty('--rx', `${rotateX}deg`); card.style.setProperty('--ry', `${rotateY}deg`);
+        }
+
+        function handleMouseLeave(card) { card.style.setProperty('--rx', `0deg`); card.style.setProperty('--ry', `0deg`); card.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease, filter 0.6s ease'; }
+
+        function swipeAnimationOnActive(direction) {
+            if (isUIAnimating || currentUIIndex >= slidesUI.length) return;
+            isUIAnimating = true; if(navigator.vibrate) navigator.vibrate(direction === 'right' ? [20, 30, 20] : 30);
+            const activeCard = document.querySelectorAll('.card')[currentUIIndex];
+            if (!activeCard) { isUIAnimating = false; return; }
+            activeCard.classList.add(direction === 'right' ? 'swipe-right' : 'swipe-left');
+            setTimeout(() => { currentUIIndex++; updateStack(); isUIAnimating = false; }, 300);
+        }
+
+        function handleDislike() { swipeAnimationOnActive('left'); }
+        function handleLike() { swipeAnimationOnActive('right'); }
+
+        function expandToPlayer(e, index) {
+            e.stopPropagation(); const activeCard = document.querySelectorAll('.card')[index]; if(!activeCard) return;
+            document.getElementById('main-ui').classList.add('ui-hidden'); document.getElementById('bg-typo').classList.add('ui-hidden');
+            activeCard.classList.add('expanding-player');
+            const vid = activeCard.querySelector('video'); if(vid) { vid.style.opacity = '1'; vid.style.filter = 'none'; vid.play(); }
+            setTimeout(() => {
+                alert("Tutaj otworzyłby się odtwarzacz pełnoekranowy (Kinowe Przejście!).");
+                activeCard.classList.remove('expanding-player'); document.getElementById('main-ui').classList.remove('ui-hidden'); document.getElementById('bg-typo').classList.remove('ui-hidden');
+                if(vid) vid.style.filter = ''; updateStack();
+            }, 3000);
+        }
+
+        function pointerDown(e, card) {
+            if (e.target.closest('button, a')) return; if (!card.classList.contains('active')) return;
+            initAudioUI(); card.setPointerCapture(e.pointerId); let startX = e.clientX; let startY = e.clientY;
+            card.style.transition = 'none'; card.style.setProperty('--rx', `0deg`); card.style.setProperty('--ry', `0deg`);
+            function pointerMove(ev) {
+                const dx = ev.clientX - startX; const dy = ev.clientY - startY; const rotate = Math.max(-18, Math.min(18, dx / 14));
+                card.style.transform = `translateX(${dx}px) translateY(${dy * 0.4}px) translateZ(120px) rotate(${rotate}deg) scale(1.02)`;
+                const likeOverlay = card.querySelector('.like-overlay'); const dislikeOverlay = card.querySelector('.dislike-overlay'); const abs = Math.abs(dx);
+                if (dx > 0) { if (likeOverlay) likeOverlay.style.opacity = Math.min(1, abs / 120); if (dislikeOverlay) dislikeOverlay.style.opacity = 0; } 
+                else { if (dislikeOverlay) dislikeOverlay.style.opacity = Math.min(1, abs / 120); if (likeOverlay) likeOverlay.style.opacity = 0; }
+            }
+            function pointerUp(ev) {
+                try { card.releasePointerCapture(e.pointerId); } catch (err) {}
+                document.removeEventListener('pointermove', pointerMove); document.removeEventListener('pointerup', pointerUp);
+                const totalDx = ev.clientX - startX;
+                if (Math.abs(totalDx) > 120) swipeAnimationOnActive(totalDx > 0 ? 'right' : 'left');
+                else {
+                    if(navigator.vibrate) navigator.vibrate(10);
+                    card.style.transition = 'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)'; card.style.transform = '';
+                    if (card.querySelector('.like-overlay')) card.querySelector('.like-overlay').style.opacity = 0; if (card.querySelector('.dislike-overlay')) card.querySelector('.dislike-overlay').style.opacity = 0;
+                }
+            }
+            document.addEventListener('pointermove', pointerMove); document.addEventListener('pointerup', pointerUp);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            const modalOverlay = document.getElementById('modal-overlay');
+            const resumeModal = document.getElementById('resume-modal-overlay');
+            if ((modalOverlay && modalOverlay.classList.contains('active')) || (resumeModal && resumeModal.classList.contains('active')) || isHeroModalOpen) return;
+            if (e.key === 'ArrowLeft') handleDislike(); else if (e.key === 'ArrowRight') handleLike();
+            else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if(currentUIIndex < slidesUI.length) expandToPlayer(e, currentUIIndex); }
+        });
+
+        document.addEventListener('click', (e) => { const btn = e.target.closest('.read-desc-btn'); if (btn) openModal(e, Number(btn.dataset.index)); });
+
+        function openModal(e, index) {
+            e.stopPropagation(); const slide = slidesUI[index];
+            document.getElementById('modal-title').innerText = slide.title; document.getElementById('modal-tag').innerText = slide.tag;
+            document.getElementById('modal-year').innerText = slide.year; document.getElementById('modal-duration').innerText = slide.duration;
+            document.getElementById('modal-desc').innerText = slide.desc; document.getElementById('modal-trailer-bg').style.backgroundImage = `url('${slide.image}')`;
+            const modalOverlay = document.getElementById('modal-overlay');
+            modalOverlay.classList.add('active'); document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() { const modalOverlay = document.getElementById('modal-overlay'); modalOverlay.classList.remove('active'); document.body.style.overflow = 'auto'; }
+        document.getElementById('modal-close').addEventListener('click', closeModal);
+        document.getElementById('modal-overlay').addEventListener('click', (e) => { if (e.target.id === 'modal-overlay') closeModal(); });
+
+
+        // ==========================================
+        // LOGIKA ZAKŁADEK I KARUZELI RECENT / NOWOŚCI
+        // ==========================================
+        
+        function switchRecentTab(targetId, btn) {
+            const buttons = btn.parentElement.querySelectorAll('.recent-tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const section = btn.closest('.recent-section');
+            const wrappers = section.querySelectorAll('.recent-grid-wrapper');
+            wrappers.forEach(w => w.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+        }
+
+        function switchNowosciTab(targetId, btn) {
+            const buttons = btn.parentElement.querySelectorAll('.recent-tab-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const wrappers = document.querySelectorAll('#nowosci-section .recent-grid-wrapper');
+            wrappers.forEach(w => w.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+        }
+
+        function scrollRecent(gridId, amount) {
+            const grid = document.getElementById(gridId);
+            if(grid) grid.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        const recentGrids = document.querySelectorAll('.recent-grid');
+        recentGrids.forEach(grid => {
+            const updateArrows = () => {
+                const wrapper = grid.parentElement;
+                const leftBtn = wrapper.querySelector('.scroll-arrow-left');
+                const rightBtn = wrapper.querySelector('.scroll-arrow-right');
+                
+                if(leftBtn) {
+                    if (grid.scrollLeft <= 10) leftBtn.classList.remove('visible'); 
+                    else leftBtn.classList.add('visible');
+                }
+                
+                if(rightBtn) {
+                    if (grid.scrollLeft >= grid.scrollWidth - grid.clientWidth - 10) rightBtn.classList.remove('visible'); 
+                    else rightBtn.classList.add('visible');
+                }
+            };
+            grid.addEventListener('scroll', updateArrows); 
+            window.addEventListener('resize', updateArrows);
+            setTimeout(updateArrows, 100);
+        });
+
+        initStack();
+
+        let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2, currentX = mouseX, currentY = mouseY;
+        document.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
+        function animateGradient() {
+            currentX += (mouseX - currentX) * 0.05; currentY += (mouseY - currentY) * 0.05;
+            const normX = (currentX / window.innerWidth - 0.5) * 2, normY = (currentY / window.innerHeight - 0.5) * 2, t = Date.now() * 0.001;
+            document.documentElement.style.setProperty('--x1', `${50 + Math.sin(t * 0.5) * 10 + normX * 15}%`);
+            document.documentElement.style.setProperty('--y1', `${40 + Math.cos(t * 0.6) * 10 + normY * 15}%`);
+            document.documentElement.style.setProperty('--x2', `${25 + Math.sin(t * 0.4 + 2) * 15 - normX * 20}%`);
+            document.documentElement.style.setProperty('--y2', `${65 + Math.cos(t * 0.5 + 1) * 15 - normY * 20}%`);
+            document.documentElement.style.setProperty('--x3', `${75 + Math.sin(t * 0.6 + 4) * 15 + normX * 10}%`);
+            document.documentElement.style.setProperty('--y3', `${60 + Math.cos(t * 0.4 + 3) * 15 - normY * 10}%`);
+            requestAnimationFrame(animateGradient);
+        }
+        animateGradient();
+
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.15 };
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('is-visible'); obs.unobserve(entry.target); } });
+        }, observerOptions);
+        
+        document.querySelectorAll('.recent-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        document.querySelectorAll('.recent-item').forEach(item => {
+            const magneticPlay = item.querySelector('.magnetic-play');
+            const video = item.querySelector('.recent-video');
+            item.addEventListener('mouseenter', () => { initAudioUI(); if(video) video.play().catch(()=>{}); });
+            item.addEventListener('mouseleave', () => {
+                if(video) { video.pause(); video.currentTime = 0; }
+                if(magneticPlay) magneticPlay.style.transform = `translate(0px, 0px)`;
+                const menu = item.querySelector('.blur-action-menu'); if(menu) menu.classList.remove('active');
+            });
+            item.addEventListener('mousemove', (e) => {
+                if (!magneticPlay) return; const rect = item.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2; const centerY = rect.top + rect.height / 2;
+                const offsetX = (e.clientX - centerX) * 0.35; const offsetY = (e.clientY - centerY) * 0.35;
+                magneticPlay.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+            });
+        });
+
+        function toggleBlurMenu(e, btn) { 
+            e.stopPropagation(); 
+            const menu = btn.closest('.recent-item, .pod-recent-item').querySelector('.blur-action-menu'); 
+            menu.classList.toggle('active'); 
+        }
+        document.querySelectorAll('.blur-action-menu').forEach(menu => { menu.addEventListener('click', (e) => { if(e.target === menu) { e.stopPropagation(); menu.classList.remove('active'); } }); });
+
+        function expandRecentFromMenu(e, btn) {
+            e.stopPropagation(); const item = btn.closest('.recent-item'); item.querySelector('.blur-action-menu').classList.remove('active');
+            document.getElementById('main-ui').classList.add('ui-hidden'); document.getElementById('bg-typo').classList.add('ui-hidden');
+            item.classList.add('expanding-player'); const vid = item.querySelector('video'); if(vid) { vid.style.opacity = '1'; vid.style.filter = 'none'; vid.play(); }
+            setTimeout(() => { alert("Odtwarzacz pełnoekranowy (Kontynuacja)."); item.classList.remove('expanding-player'); document.getElementById('main-ui').classList.remove('ui-hidden'); document.getElementById('bg-typo').classList.remove('ui-hidden'); if(vid) vid.style.filter = 'grayscale(20%) contrast(120%)'; }, 3000);
+        }
+
+        function removeRecentItem(e, btn) {
+            e.stopPropagation(); const item = btn.closest('.recent-item, .pod-recent-item'); item.querySelector('.blur-action-menu').classList.remove('active'); item.classList.add('removing');
+            setTimeout(() => { item.remove(); }, 500); 
+        }
+
+        function openResumeModal(e, btn) {
+            e.stopPropagation(); 
+            const item = btn.closest('.recent-item, .pod-recent-item');
+            
+            let title = "Tytuł";
+            let info = "";
+            let time = "00:00:00";
+
+            if(item.classList.contains('recent-item')) {
+                title = item.querySelector('.recent-title').innerText; 
+                info = item.querySelector('.recent-info').innerHTML; 
+                time = item.querySelector('.resume-time-badge') ? item.querySelector('.resume-time-badge').innerText : "00:00:00";
+            } else {
+                title = item.querySelector('.pod-rec-title').innerText; 
+                info = item.querySelector('.pod-rec-author').innerText; 
+                time = item.querySelector('.pod-rec-time').innerText;
+            }
+            
+            document.getElementById('resume-modal-title').innerText = title; 
+            document.getElementById('resume-modal-info').innerHTML = info;
+            document.getElementById('btn-continue').innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Kontynuuj od ${time}`;
+            
+            item.querySelector('.blur-action-menu').classList.remove('active');
+            document.getElementById('resume-modal-overlay').classList.add('active'); 
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeResumeModal() { document.getElementById('resume-modal-overlay').classList.remove('active'); document.body.style.overflow = 'auto'; }
+        function startFresh() { alert("Odtwarzanie rozpocznie się od początku (00:00:00)."); closeResumeModal(); }
+        document.getElementById('resume-modal-overlay').addEventListener('click', (e) => { if (e.target.id === 'resume-modal-overlay') closeResumeModal(); });
+
+        function expandRecentToPlayer(e, item) {
+            if(e.target.closest('.blur-action-menu') || e.target.closest('.action-menu-btn')) return;
+            document.getElementById('main-ui').classList.add('ui-hidden'); document.getElementById('bg-typo').classList.add('ui-hidden');
+            item.classList.add('expanding-player');
+            const vid = item.querySelector('video'); if(vid) { vid.style.opacity = '1'; vid.style.filter = 'none'; vid.play(); }
+            setTimeout(() => { alert("Odtwarzacz pełnoekranowy (Kontynuacja)."); item.classList.remove('expanding-player'); document.getElementById('main-ui').classList.remove('ui-hidden'); document.getElementById('bg-typo').classList.remove('ui-hidden'); if(vid) vid.style.filter = 'grayscale(20%) contrast(120%)'; }, 3000);
+        }
+
+        // ==========================================
+        // STICKY SCROLL: FADE HERO ORAZ OBSŁUGA TŁA
+        // ==========================================
+        const mainNav = document.getElementById('main-nav');
+        const heroSection = document.getElementById('hero-section');
+        const heroStickyContainer = document.getElementById('hero-sticky-container');
+
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY;
+
+            if (mainNav) {
+                if (y > 50) mainNav.classList.add('scrolled');
+                else mainNav.classList.remove('scrolled');
+            }
+
+            if (heroStickyContainer && heroSection) {
+                const rect = heroStickyContainer.getBoundingClientRect();
+                
+                let progress = 0;
+                if(rect.top < 0) {
+                    progress = Math.min(1, -rect.top / (rect.height - window.innerHeight));
+                }
+
+                let opacity = 1;
+                if (progress > 0.15) {
+                    opacity = 1 - ((progress - 0.15) / 0.65); 
+                }
+                heroSection.style.opacity = Math.max(0, opacity);
+                heroSection.style.transform = `scale(${1 + progress * 0.15})`;
+            }
+
+            const transitionSection = document.querySelector('.transition-section');
+            if(!transitionSection) return;
+            const transRect = transitionSection.getBoundingClientRect();
+            const textOffset = transRect.top + (transRect.height / 2); 
+            
+            if (textOffset <= window.innerHeight * 0.8) {
+                document.getElementById('part1-bg').style.opacity = '0';
+                document.getElementById('part2-bg').style.opacity = '1';
+                window.isGalacticVisible = true;
+            } else {
+                document.getElementById('part1-bg').style.opacity = '1';
+                document.getElementById('part2-bg').style.opacity = '0';
+                window.isGalacticVisible = false;
+            }
+
+            const part2Content = document.getElementById('part2-content');
+            if(!part2Content) return;
+            const part2Rect = part2Content.getBoundingClientRect();
+            
+            if (part2Rect.top <= window.innerHeight * 0.75) {
+                if (userAnswers.length === 0) document.getElementById('q1-panel').classList.add('active');
+            } else {
+                if (userAnswers.length === 0) document.getElementById('q1-panel').classList.remove('active');
+            }
+        });
+
+        // ==========================================
+        // Logika Quizu i Przekierowań
+        // ==========================================
+        const userAnswers = [];
+        window.speedBoost = 1;
+        let destinationUrl = ""; 
+
+        function nextQuestion(currentQNumber, answer) {
+            userAnswers.push(answer);
+            const currentPanel = document.getElementById(`q${currentQNumber}-panel`);
+            currentPanel.classList.remove('active');
+            setTimeout(() => {
+                const nextPanel = document.getElementById(`q${currentQNumber + 1}-panel`);
+                if(nextPanel) nextPanel.classList.add('active');
+            }, 1000); 
+        }
+
+        function finishQuiz(answer) {
+            userAnswers.push(answer);
+            document.getElementById('q3-panel').classList.remove('active');
+
+            let destinationName = "";
+            let buttonText = "";
+
+            if(userAnswers.includes('Energetycznie') || userAnswers.includes('Praktycznie')) {
+                destinationName = "Mars";
+                destinationUrl = "mars.html";
+                buttonText = "Rozpocznij odkrywanie Marsa";
+            }
+            else if (userAnswers.includes('Spokojnie') || userAnswers.includes('Odpoczynek')) {
+                destinationName = "Saturn";
+                destinationUrl = "saturn.html";
+                buttonText = "Rozpocznij odkrywanie Saturna";
+            }
+            else {
+                destinationName = "Ziemia";
+                destinationUrl = "ziemia.html";
+                buttonText = "Rozpocznij odkrywanie Ziemi";
+            }
+            
+            document.getElementById('result-text').innerText = "Cel: " + destinationName;
+            document.getElementById('start-journey-btn').innerText = buttonText;
+
+            setTimeout(() => {
+                document.getElementById('result-panel').classList.add('active');
+                window.speedBoost = 1.5; 
+            }, 1000);
+        }
+
+        function startJourney() {
+            document.getElementById('result-panel').classList.remove('active');
+            window.speedBoost = 1.9; 
+            
+            let fadeOverlay = document.getElementById('fade-overlay');
+            if (!fadeOverlay) {
+                fadeOverlay = document.createElement('div');
+                fadeOverlay.id = 'fade-overlay';
+                fadeOverlay.style.position = 'fixed';
+                fadeOverlay.style.top = '0';
+                fadeOverlay.style.left = '0';
+                fadeOverlay.style.width = '100vw';
+                fadeOverlay.style.height = '100vh';
+                fadeOverlay.style.backgroundColor = '#000';
+                fadeOverlay.style.zIndex = '9999';
+                fadeOverlay.style.opacity = '0';
+                fadeOverlay.style.pointerEvents = 'none';
+                fadeOverlay.style.transition = 'opacity 1.5s ease-in-out';
+                document.body.appendChild(fadeOverlay);
+            }
+
+            setTimeout(() => {
+                fadeOverlay.style.opacity = '1';
+            }, 50);
+
+            setTimeout(() => {
+                window.location.href = destinationUrl;
+            }, 1500);
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.0006);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
+        camera.position.z = 400;
+
+        const renderer = new THREE.WebGLRenderer({ 
+            alpha: true, 
+            antialias: true, 
+            powerPreference: "high-performance" 
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0); 
+        
+        document.getElementById('part2-bg').appendChild(renderer.domElement);
+
+        function createStarTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.05, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const starTexture = createStarTexture();
+
+        function createStarField(count, sizeBase, spread, baseColorHex, opacity) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const baseColor = new THREE.Color(baseColorHex);
+            const whiteColor = new THREE.Color(0xffffff);
+
+            for (let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                positions[i3] = (Math.random() - 0.5) * spread; 
+                positions[i3 + 1] = (Math.random() - 0.5) * spread; 
+                positions[i3 + 2] = Math.random() * 2900 - 2500; 
+
+                const c = baseColor.clone().lerp(whiteColor, Math.random() * 0.9);
+                colors[i3] = c.r; colors[i3 + 1] = c.g; colors[i3 + 2] = c.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: sizeBase, map: starTexture, transparent: true, opacity: opacity, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+            });
+
+            const points = new THREE.Points(geometry, material);
+            points.userData = { baseOpacity: opacity }; 
+            return points;
+        }
+
+        const layer1 = createStarField(4000, 1.2, 2500, 0x88aaff, 0.4); 
+        const layer2 = createStarField(1500, 2.8, 1800, 0xddeeff, 0.7);  
+        const layer3 = createStarField(500, 6.0, 1000, 0xffffff, 0.9);   
+
+        scene.add(layer1); scene.add(layer2); scene.add(layer3);
+        const starLayers = [layer1, layer2, layer3];
+
+        const warpGeo = new THREE.BufferGeometry();
+        const warpCount = 600;
+        const warpPos = new Float32Array(warpCount * 6);
+        for(let i=0; i<warpCount; i++) {
+            const x = (Math.random() - 0.5) * 3000;
+            const y = (Math.random() - 0.5) * 3000;
+            const z = Math.random() * 3000 - 1500;
+            warpPos[i*6] = x; warpPos[i*6+1] = y; warpPos[i*6+2] = z;
+            warpPos[i*6+3] = x; warpPos[i*6+4] = y; warpPos[i*6+5] = z;
+        }
+        warpGeo.setAttribute('position', new THREE.BufferAttribute(warpPos, 3));
+        const warpMat = new THREE.LineBasicMaterial({ color: 0x88ccff, transparent: true, opacity: 0 });
+        const warpLines = new THREE.LineSegments(warpGeo, warpMat);
+        scene.add(warpLines);
+
+        let targetX = 0; let targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+        let threeMouseX = 0; let threeMouseY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            threeMouseX = (event.clientX - windowHalfX); 
+            threeMouseY = (event.clientY - windowHalfY);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        const bgImageElement = document.getElementById('bg-image');
+        let currentBgX = 0; let currentBgY = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!window.isGalacticVisible && window.scrollY < 100) return;
+
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime(); 
+
+            const floatX = Math.sin(time * 0.3) * 12; 
+            const floatY = Math.cos(time * 0.2) * 8;  
+
+            targetX = (threeMouseX * 0.01) + floatX; 
+            targetY = (threeMouseY * 0.01) + floatY;
+            camera.position.x += (targetX - camera.position.x) * 0.02;
+            camera.position.y += (-targetY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+
+            if(bgImageElement && window.isGalacticVisible) {
+                const bgTargetX = (threeMouseX * 0.012) + (floatX * 1.2); 
+                const bgTargetY = (threeMouseY * 0.012) + (floatY * 1.2);
+                currentBgX += (bgTargetX - currentBgX) * 0.05;
+                currentBgY += (bgTargetY - currentBgY) * 0.05;
+                bgImageElement.style.transform = `translate(${-currentBgX}px, ${-currentBgY}px)`;
+            }
+
+            const targetFov = window.speedBoost > 2 ? 110 : 60;
+            camera.fov += (targetFov - camera.fov) * 0.05;
+            camera.updateProjectionMatrix();
+
+            const speedMultiplier = 45 * (window.speedBoost || 1); 
+            
+            starLayers.forEach((layer, index) => {
+                const positions = layer.geometry.attributes.position.array;
+                const speed = (index + 1) * speedMultiplier * delta; 
+                
+                for(let i = 2; i < positions.length; i += 3) {
+                    positions[i] += speed; 
+                    if(positions[i] > 400) {
+                        positions[i] = -2500;
+                        positions[i - 1] = (Math.random() - 0.5) * 2000; 
+                        positions[i - 2] = (Math.random() - 0.5) * 2000; 
+                    }
+                }
+                layer.geometry.attributes.position.needsUpdate = true;
+                layer.rotation.z += delta * 0.005 * (index + 1) * (window.speedBoost || 1); 
+
+                const base = layer.userData.baseOpacity;
+                const breathPhase = time * 0.8 + index; 
+                layer.material.opacity = base + Math.sin(breathPhase) * 0.15;
+            });
+
+            if (window.speedBoost > 2) {
+                warpMat.opacity = Math.min(1, warpMat.opacity + 0.02);
+                const wPos = warpLines.geometry.attributes.position.array;
+                for(let i=0; i<warpCount; i++) {
+                    wPos[i*6+2] += 80 * window.speedBoost * delta;
+                    wPos[i*6+5] = wPos[i*6+2] + (60 * window.speedBoost); 
+
+                    if (wPos[i*6+2] > 400) {
+                        const z = -2000 - Math.random() * 1000;
+                        wPos[i*6+2] = z;
+                        wPos[i*6+5] = z;
+                    }
+                }
+                warpLines.geometry.attributes.position.needsUpdate = true;
+            } else {
+                warpMat.opacity = Math.max(0, warpMat.opacity - 0.05);
+            }
+
+            if(window.isGalacticVisible) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        animate();
+    </script>
+</body>
+</html>

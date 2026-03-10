@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduSpace - Mars: Działanie i Odwaga</title>
+    
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.39/dist/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================================
+           BAZA I RESET
+           ========================================================= */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #000000; color: #ffffff; overflow-x: hidden;
+            --v-scale: 1.05; --v-blur: 0px; --v1-opacity: 1;
+            /* Zmienne navbar */
+            --text-main: #ffffff;
+            --bg-dark: #050505;
+            --heart-color: #ef4444; 
+        }
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* =========================================================
+           STICKY NAVBAR I STRZAŁKA POWROTU
+           ========================================================= */
+        .navbar {
+            position: fixed; 
+            top: 0; left: 0; width: 100%;
+            padding: 35px 50px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 1000;
+            transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        backdrop-filter 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+                        padding 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.4s ease;
+        }
+
+        .navbar.scrolled {
+            background: rgba(5, 5, 5, 0.5);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            padding: 15px 50px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .nav-left { display: flex; align-items: center; gap: 40px; }
+        
+        .nav-back-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main); cursor: pointer; transition: all 0.3s ease;
+            backdrop-filter: blur(10px); text-decoration: none;
+            margin-right: 10px;
+        }
+        .nav-back-btn:hover {
+            background: rgba(255, 255, 255, 0.15); transform: scale(1.1) translateX(-3px);
+            border-color: rgba(255,255,255,0.3);
+        }
+        .nav-back-btn svg { width: 20px; height: 20px; }
+
+        .logo { display: flex; align-items: center; cursor: pointer; margin-top: -80px; margin-bottom: -80px; transition: transform 0.3s ease; text-decoration: none; }
+        .navbar.scrolled .logo { transform: scale(0.9); }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .nav-links { display: flex; align-items: center; gap: 35px; }
+        .nav-link {
+            position: relative; color: var(--text-main); text-decoration: none; 
+            font-size: 15px; font-weight: 500; display: flex; align-items: center; gap: 8px; 
+            transition: color 0.3s, opacity 0.3s; text-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0.8;
+            cursor: pointer; background: none; border: none; font-family: inherit;
+        }
+        .nav-link:hover { opacity: 1; }
+        .nav-link svg { width: 18px; height: 18px; }
+        .nav-link::after {
+            content: ''; position: absolute; bottom: -6px; left: 0;
+            width: 0%; height: 2px; background-color: var(--text-main);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 2px;
+        }
+        .nav-link:hover::after { width: 100%; }
+
+        .search-wrapper {
+            display: flex; align-items: center; background: transparent; border-radius: 30px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid transparent; padding: 4px;
+        }
+        .search-wrapper.active {
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(15px);
+            border-color: rgba(255,255,255,0.2); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .search-btn { padding: 4px; margin: 0; }
+        .search-btn::after { display: none; } 
+        
+        .search-input {
+            width: 0; border: none; background: transparent; color: white; outline: none;
+            padding: 0; font-size: 14px; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); font-family: inherit;
+        }
+        .search-input::placeholder { color: rgba(255,255,255,0.5); }
+        .search-wrapper.active .search-input { width: 220px; padding: 0 10px; }
+        .search-wrapper.active .search-text { display: none; }
+
+        .nav-right { display: flex; align-items: center; gap: 25px; }
+
+        .glass-btn-nav {
+            display: flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 10px 20px; border-radius: 30px; color: var(--text-main); text-decoration: none;
+            font-size: 14px; font-weight: 600; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .glass-btn-nav:hover {
+            background: rgba(255, 255, 255, 0.15); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        .glass-btn-nav svg { width: 16px; height: 16px; }
+
+        .user-profile-link {
+            display: flex; align-items: center; gap: 12px; text-decoration: none; color: white;
+            padding: 6px 12px 6px 6px; border-radius: 30px; transition: 0.3s;
+        }
+        .user-profile-link:hover { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+        .user-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.2); }
+        .settings-icon { width: 20px; height: 20px; opacity: 0.8; transition: transform 0.3s; }
+        .user-profile-link:hover .settings-icon { transform: rotate(90deg); opacity: 1; }
+
+        /* =========================================================
+           WIDEO W TLE
+           ========================================================= */
+        .video-background { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000000; }
+        .video-background video { width: 100%; height: 100%; object-fit: cover; }
+        #bg-video-2 { z-index: 0; }
+        #bg-video-2 video { width: 104%; margin-left: -4%; }
+        #bg-video-1 { z-index: 1; opacity: var(--v1-opacity); transform: scale(var(--v-scale)); filter: blur(var(--v-blur)); will-change: opacity, transform, filter; }
+        .video-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 2; pointer-events: none; }
+
+        /* =========================================================
+           GŁÓWNY KONTENER
+           ========================================================= */
+        .main-content { position: relative; z-index: 10; background: transparent; }
+
+        .hero-section { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 8vh; }
+        .hero-title { font-size: 14px; font-weight: 400; letter-spacing: 4px; text-transform: uppercase; color: rgba(255, 255, 255, 0.7); text-align: center; opacity: 0; transform: translateY(20px); animation: fadeUp 1.5s ease 0.5s forwards; text-shadow: 0 4px 10px rgba(0,0,0,0.8); }
+        .hero-title span { display: block; font-size: 52px; font-weight: 700; letter-spacing: -1.5px; color: #ffffff; margin-top: 12px; text-transform: none; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* =========================================================
+           NAGŁÓWKI SEKCJI & PRZEŁĄCZNIK (METAL SHINE)
+           ========================================================= */
+        .section-header { width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 40px; margin-bottom: 30px; text-align: center; display: flex; flex-direction: column; align-items: center;}
+        
+        .section-header h2 { 
+            font-size: 32px; 
+            font-weight: 600; 
+            letter-spacing: -1px; 
+            background: linear-gradient(110deg, #71717a 0%, #d4d4d8 25%, #ffffff 50%, #d4d4d8 75%, #71717a 100%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: metalFlowTitle 6s linear infinite;
+        }
+
+        @keyframes metalFlowTitle { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+
+        .section-header p { font-size: 15px; color: rgba(255, 255, 255, 0.6); margin-top: 8px; font-weight: 400; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+
+        .content-toggle { display: inline-flex; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 5px; border-radius: 40px; border: 1px solid rgba(255, 255, 255, 0.15); margin-top: 25px; }
+        .toggle-btn { background: transparent; border: none; color: rgba(255, 255, 255, 0.6); padding: 10px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; }
+        .toggle-btn:hover { color: rgba(255, 255, 255, 0.9); }
+        .toggle-btn.active { background: #ffffff; color: #000000; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+
+        /* =========================================================
+           BOCZNA NAWIGACJA (SCROLL SPY / SIDE NAV)
+           ========================================================= */
+        .side-nav { position: fixed; right: 25px; top: 50%; transform: translateY(-50%); z-index: 100; display: flex; flex-direction: column; gap: 12px; background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 15px 10px; border-radius: 50px; border: 1px solid rgba(255, 255, 255, 0.15); }
+        .nav-dot { width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; }
+        .nav-dot svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-dot:hover { color: rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.1); }
+        .nav-dot.active { color: #000000; background: #ffffff; box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+
+        /* =========================================================
+           WSPÓLNE STYLE PRZYCISKÓW AKCJI
+           ========================================================= */
+        .action-btn-primary { display: flex; align-items: center; gap: 8px; background: #ffffff; color: #000000; border: none; padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+        .action-btn-primary svg { width: 16px; height: 16px; fill: currentColor; }
+        .action-btn-primary:hover { transform: scale(1.05); background: #e0e0e0; }
+        
+        .action-btn-secondary { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; border-radius: 50%; cursor: pointer; transition: transform 0.2s ease, background 0.2s ease; }
+        .action-btn-secondary svg { width: 18px; height: 18px; }
+        .action-btn-secondary:hover { transform: scale(1.1); background: rgba(255, 255, 255, 0.25); }
+
+        .actions-group { display: flex; align-items: center; gap: 10px; }
+
+        /* =========================================================
+           KARUZELA ORBITALNA (FILMY / SERIALE / BAJKI)
+           ========================================================= */
+        .trackable { scroll-margin-top: 10vh; padding-top: 60px; } 
+        
+        /* Modyfikacja: Ukrywanie nieaktywnych karuzel */
+        .orbital-carousel-wrapper { position: relative; width: 100%; height: 500px; display: none; align-items: center; justify-content: center; perspective: 1200px; overflow: hidden; margin-bottom: 40px; animation: fadeIn 0.4s ease; }
+        .orbital-carousel-wrapper.active { display: flex; }
+
+        .orbital-container { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; display: flex; align-items: center; justify-content: center; }
+        .orbital-card { position: absolute; width: 540px; height: 330px; border-radius: 20px; background-size: cover; background-position: center; cursor: pointer; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.8s ease; box-shadow: 0 20px 50px rgba(0,0,0,0.9); border: 1px solid rgba(255, 255, 255, 0.15); overflow: hidden; background-color: #000; }
+        .card-dimmer { position: absolute; inset: 0; background: rgba(0,0,0,0.7); transition: opacity 0.8s ease; z-index: 1; }
+        .card-bottom-panel { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); padding: 25px 30px; z-index: 3; border-top: 1px solid rgba(255, 255, 255, 0.05); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .o-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; color: #ffffff;}
+        .o-meta { font-size: 13px; color: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 12px; }
+        .o-badge { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+
+        .card-trailer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 2; transition: opacity 1s ease; pointer-events: none; }
+        .orbital-card.is-playing-trailer .card-trailer { opacity: 1; }
+        .orbital-card.is-playing-trailer .card-bottom-panel { opacity: 0; transform: translateY(20px); pointer-events: none; }
+
+        .o-actions { display: flex; align-items: center; gap: 12px; margin-top: 18px; opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none; }
+        .orbital-card.is-active .o-actions { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+        .carousel-controls { position: absolute; top: 40%; left: 0; right: 0; transform: translateY(-50%); display: flex; justify-content: space-between; padding: 0 5vw; z-index: 20; pointer-events: none; }
+        .c-btn { pointer-events: auto; width: 50px; height: 50px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; backdrop-filter: blur(10px); }
+        .c-btn:hover { background: #fff; color: #000; transform: scale(1.1); }
+        .c-btn svg { width: 24px; height: 24px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+        /* =========================================================
+           WIZJE TWÓRCÓW (Przewijana poziomo)
+           ========================================================= */
+        .creators-section { position: relative; width: 100%; padding: 60px 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5) 20%, rgba(0,0,0,0.5) 80%, transparent); }
+        .creators-container { max-width: 1400px; margin: 0 auto; padding: 0 40px; position: relative; }
+        
+        .shorts-slider { display: flex; gap: 20px; overflow-x: auto; padding: 10px 0 20px 0; scroll-behavior: smooth; -ms-overflow-style: none; scrollbar-width: none; }
+        .shorts-slider::-webkit-scrollbar { display: none; }
+        
+        .short-card { flex: 0 0 auto; width: 300px; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.3s ease; }
+        .short-card:hover { transform: translateY(-8px); }
+        
+        .short-thumb-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .short-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease, filter 0.3s ease; }
+        .short-card:hover .short-thumb { transform: scale(1.05); filter: brightness(0.7); }
+        
+        .short-duration { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: #fff; font-size: 11px; font-weight: 600; padding: 4px 6px; border-radius: 4px; backdrop-filter: blur(4px); }
+        
+        .play-icon-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); opacity: 0; transition: 0.3s ease; color: white; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border-radius: 50%; padding: 12px; }
+        .short-card:hover .play-icon-overlay { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .short-info { display: flex; gap: 12px; align-items: flex-start; }
+        .short-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.2); }
+        .short-text { display: flex; flex-direction: column; gap: 4px; }
+        .short-title { font-size: 14px; font-weight: 600; line-height: 1.4; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .short-meta { font-size: 12px; color: rgba(255,255,255,0.5); }
+        .short-meta span { display: block; }
+
+        /* Strzałki nawigacyjne dla Slidera poziomego */
+        .slider-controls { position: absolute; top: 50%; transform: translateY(-50%); width: 100%; left: 0; pointer-events: none; display: flex; justify-content: space-between; padding: 0 10px; z-index: 10; }
+        .s-btn { pointer-events: auto; width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.2); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s; backdrop-filter: blur(10px); }
+        .s-btn:hover { background: #fff; color: #000; transform: scale(1.1); }
+        .s-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; }
+
+        /* =========================================================
+           PODCASTY
+           ========================================================= */
+        .podcasts-section { width: 100%; margin-top: 40px; }
+        .podcast-grid { max-width: 1400px; margin: 0 auto; padding: 0 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 30px; }
+        .podcast-card { position: relative; height: 260px; border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; padding: 25px; cursor: pointer; transition: transform 0.4s ease; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .podcast-card:hover { transform: translateY(-6px); border-color: rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.8); }
+        
+        .pod-top { display: flex; justify-content: space-between; align-items: flex-start; z-index: 2; }
+        .pod-cover { width: 60px; height: 60px; border-radius: 12px; background-size: cover; border: 1px solid rgba(255,255,255,0.1); }
+        .pod-tag { font-size: 10px; font-weight: 700; letter-spacing: 1px; background: #fff; padding: 4px 10px; border-radius: 16px; color: #000; }
+        
+        .pod-bottom { display: flex; flex-direction: column; gap: 15px; z-index: 2; }
+        .pod-texts h3 { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+        .pod-texts p { font-size: 14px; color: rgba(255, 255, 255, 0.6); }
+        
+        .pod-player { display: flex; align-items: center; justify-content: space-between; background: #000000; padding: 10px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); }
+        .pod-play-group { display: flex; align-items: center; gap: 12px; }
+        .pod-play-mini { width: 32px; height: 32px; border-radius: 50%; background: #ffffff; color: #000; display: flex; align-items: center; justify-content: center; }
+        .pod-play-mini svg { width: 12px; height: 12px; fill: currentColor; margin-left: 2px;}
+        .pod-duration { font-size: 13px; font-weight: 500; color: #ffffff; }
+
+        .premium-wave { display: flex; align-items: center; gap: 3px; height: 14px; opacity: 0.4; }
+        .podcast-card:hover .premium-wave { opacity: 1; }
+        .premium-wave span { width: 3px; height: 100%; background: #ffffff; border-radius: 3px; animation: p-wave 1s infinite ease-in-out alternate; }
+        .premium-wave span:nth-child(1) { animation-delay: 0.0s; height: 30%; }
+        .premium-wave span:nth-child(2) { animation-delay: 0.2s; height: 70%; }
+        .premium-wave span:nth-child(3) { animation-delay: 0.4s; height: 100%; }
+        .premium-wave span:nth-child(4) { animation-delay: 0.3s; height: 50%; }
+        .premium-wave span:nth-child(5) { animation-delay: 0.1s; height: 20%; }
+        @keyframes p-wave { 0% { transform: scaleY(0.3); } 100% { transform: scaleY(1); } }
+
+        /* =========================================================
+           EDUTALKS (EXPANDING ACCORDION)
+           ========================================================= */
+        .edutalks-section { width: 100%; margin-top: 100px; margin-bottom: 60px; }
+        .edutalks-accordion { display: flex; gap: 15px; width: 100%; max-width: 1400px; margin: 0 auto; padding: 0 40px; height: 480px; }
+        .talk-panel { flex: 1; position: relative; border-radius: 20px; overflow: hidden; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.1); background: #050505; transition: flex 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease; }
+        .talk-panel:hover { flex: 5; border-color: rgba(255, 255, 255, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .talk-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transition: opacity 0.6s ease; }
+        .talk-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 0; transition: opacity 0.6s ease; }
+        .talk-panel:hover .talk-bg { opacity: 0; }
+        .talk-panel:hover .talk-video { opacity: 1; }
+        .talk-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.4); transition: background 0.5s ease; z-index: 2; }
+        .talk-panel:hover .talk-overlay { background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%); }
+        .talk-content { position: absolute; bottom: 30px; left: 30px; z-index: 3; min-width: 500px; opacity: 0; transform: translateY(20px); transition: all 0.4s ease; pointer-events: none; }
+        .talk-panel:hover .talk-content { opacity: 1; transform: translateY(0); pointer-events: auto; transition-delay: 0.3s; }
+        .talk-guest { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; margin-bottom: 12px; display: inline-block; background: rgba(255,255,255,0.1); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); }
+        .talk-quote { font-size: 26px; font-weight: 400; font-style: italic; line-height: 1.3; color: #ffffff; margin-bottom: 24px; max-width: 90%; }
+        
+        .talk-footer { display: flex; align-items: center; gap: 15px; }
+        .talk-play-btn { display: flex; align-items: center; gap: 10px; background: #ffffff; color: #000000; border: none; padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.2s ease; }
+        .talk-play-btn svg { width: 16px; height: 16px; fill: currentColor; }
+        .talk-play-btn:hover { transform: scale(1.05); }
+
+        /* =========================================================
+           SEKCJA FINAŁOWA (MASZYNA DO PISANIA + ORBY PLANETARNE)
+           ========================================================= */
+        .galaxy-selector-section {
+            position: relative; width: 100%; min-height: 100vh;
+            background-color: #000000; box-shadow: 0 -150px 150px #000000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; padding: 40px 20px;
+        }
+
+        .emotion-headline { text-align: center; margin-bottom: 70px; min-height: 100px; }
+        .tw-line-1 { font-size: 20px; font-weight: 300; letter-spacing: 4px; color: #86868b; text-transform: uppercase; display: inline-block; min-height: 24px; }
+        .tw-line-2 { display: block; font-size: 42px; font-weight: 700; color: #ffffff; letter-spacing: -1px; margin-top: 8px; min-height: 50px; }
+
+        .cursor-active-1 { border-right: 3px solid #86868b; padding-right: 4px; animation: blink 0.8s step-end infinite; }
+        .cursor-active-2 { border-right: 3px solid #ffffff; padding-right: 4px; animation: blink 0.8s step-end infinite; }
+        @keyframes blink { 50% { border-color: transparent; } }
+
+        .hidden-until-typed { opacity: 0; pointer-events: none; transform: translateY(30px); transition: opacity 1.5s ease, transform 1.5s ease; }
+        .hidden-until-typed.revealed { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+        .planet-menu { display: flex; gap: 60px; margin-bottom: 60px; justify-content: center; align-items: flex-end; }
+        .planet-item { display: flex; flex-direction: column; align-items: center; gap: 20px; cursor: pointer; opacity: 0.4; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        .planet-item:hover, .planet-item.active { opacity: 1; transform: translateY(-10px); }
+
+        .planet-orb { width: 70px; height: 70px; border-radius: 50%; background: #000; position: relative; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; z-index: 2; }
+        .planet-orb::before { content: ''; position: absolute; inset: -5px; border-radius: 50%; background: var(--p-color); opacity: 0; filter: blur(15px); z-index: -1; transition: opacity 0.5s ease; }
+        .planet-item.active .planet-orb::before, .planet-item:hover .planet-orb::before { opacity: 0.6; }
+        .planet-item.active .planet-orb, .planet-item:hover .planet-orb { border-color: rgba(255,255,255,0.4); box-shadow: inset -10px -10px 20px rgba(0,0,0,0.9), inset 5px 5px 20px var(--p-color), 0 0 20px var(--p-color); }
+
+        .earth-orb { --p-color: #3b82f6; }
+        .mars-orb { --p-color: #ef4444; width: 60px; height: 60px; } 
+        .saturn-orb { --p-color: #eab308; width: 85px; height: 85px; } 
+        .saturn-ring { width: 140%; height: 25%; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); position: absolute; transform: rotate(20deg); transition: all 0.5s ease; z-index: 3; }
+        .planet-item.active .saturn-ring, .planet-item:hover .saturn-ring { border-color: var(--p-color); box-shadow: 0 0 10px var(--p-color), inset 0 0 5px var(--p-color); }
+
+        .planet-name { font-size: 16px; font-weight: 300; letter-spacing: 6px; text-transform: uppercase; color: #fff; transition: all 0.5s ease; }
+        .planet-item.active .planet-name, .planet-item:hover .planet-name { text-shadow: 0 0 15px var(--p-color); font-weight: 500; }
+
+        .emotion-display { text-align: center; max-width: 600px; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+        .e-title { font-size: 32px; font-weight: 600; color: #ffffff; margin-bottom: 15px; letter-spacing: -0.5px; transition: opacity 0.3s; }
+        .e-desc { font-size: 16px; color: #86868b; line-height: 1.6; margin-bottom: 30px; font-weight: 300; transition: opacity 0.3s; }
+        .launch-btn { display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff; padding: 14px 32px; border-radius: 40px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
+        .launch-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;}
+        .launch-btn:hover { background: #ffffff; color: #000000; transform: scale(1.05); }
+
+        /* =========================================================
+           UNIFIED MODAL (OKIENKO SZCZEGÓŁÓW)
+           ========================================================= */
+        .universal-modal {
+            position: fixed; inset: 0; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        .universal-modal.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+        
+        .modal-content {
+            position: relative; z-index: 2;
+            background: #0a0a0a; border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 90%; max-width: 600px; border-radius: 24px; padding: 40px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            transform: translateY(30px) scale(0.95); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .universal-modal.active .modal-content { transform: translateY(0) scale(1); }
+
+        .modal-close {
+            position: absolute; top: 20px; right: 20px; width: 36px; height: 36px;
+            background: rgba(255, 255, 255, 0.1); border: none; border-radius: 50%;
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.3s ease;
+        }
+        .modal-close:hover { background: rgba(255, 255, 255, 0.2); }
+        
+        .modal-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; background: rgba(255, 255, 255, 0.1); padding: 6px 12px; border-radius: 8px; margin-bottom: 15px; text-transform: uppercase; }
+        .modal-title { font-size: 32px; font-weight: 700; letter-spacing: -1px; margin-bottom: 8px; color: #fff; }
+        .modal-meta { font-size: 14px; color: rgba(255, 255, 255, 0.6); margin-bottom: 25px; }
+        .modal-desc { font-size: 16px; line-height: 1.6; color: #a1a1aa; margin-bottom: 35px; }
+        
+        .modal-buttons { display: flex; gap: 15px; }
+
+    </style>
+</head>
+<body>
+
+    <header class="navbar" id="main-nav">
+        <div class="nav-left">
+            <a href="#" onclick="window.history.back(); return false;" class="nav-back-btn" title="Wróć do poprzedniej strony">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </a>
+            <a href="index.html" class="logo"><img src="logoedustream.png" alt="EduStream Logo" class="logo-img"></a>
+            
+            <nav class="nav-links">
+                <div class="search-wrapper" id="searchWrapper">
+                    <button class="nav-link search-btn" onclick="toggleSearch(event)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg> 
+                        <span class="search-text">Szukaj</span>
+                    </button>
+                    <input type="text" class="search-input" id="searchInput" placeholder="Tytuł, gatunek, twórca...">
+                </div>
+                
+                <a href="kategorie.html" class="nav-link">Kategorie</a>
+                <a href="watchlist.html" class="nav-link">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link">Live <span style="color: var(--heart-color); margin-left: 4px; font-size: 18px;">•</span></a>
+            </nav>
+        </div>
+
+        <div class="nav-right">
+            <a href="#" class="glass-btn-nav">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                Back to Edunity
+            </a>
+            
+            <a href="settings.html" class="user-profile-link" title="Przejdź do Ustawień EduStream">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User Avatar" class="user-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="settings-icon">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <div class="universal-modal" id="details-modal">
+        <div class="modal-backdrop" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <span class="modal-tag" id="mdl-tag">Tag</span>
+            <h3 class="modal-title" id="mdl-title">Tytuł</h3>
+            <div class="modal-meta" id="mdl-meta">Dodatkowe informacje</div>
+            <p class="modal-desc" id="mdl-desc">Opis...</p>
+            <div class="modal-buttons">
+                <button class="action-btn-primary" onclick="alert('Uruchamiam odtwarzacz')"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Odtwórz</button>
+                <button class="action-btn-secondary" onclick="actionFav(event, 'Modal')" title="Dodaj do ulubionych"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-nav">
+        <button class="nav-dot active" data-target="section-movies" title="Kino Edukacyjne">
+            <svg viewBox="0 0 24 24"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+        <button class="nav-dot" data-target="section-creators" title="Wizje Twórców">
+            <svg viewBox="0 0 24 24"><path d="M12 20v-6M6 20V10M18 20V4"></path></svg>
+        </button>
+        <button class="nav-dot" data-target="section-podcasts" title="Słuchowiska">
+            <svg viewBox="0 0 24 24"><path d="M3 18v-6a9 9 0 0118 0v6"></path><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3z"></path></svg>
+        </button>
+        <button class="nav-dot" data-target="section-edutalks" title="EduTalks">
+            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"></path></svg>
+        </button>
+        <button class="nav-dot" data-target="section-planets" title="Zmień Perspektywę">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"></path><path d="M2 12h20"></path></svg>
+        </button>
+    </div>
+
+    <div class="video-background" id="bg-video-2">
+        <video src="mars2.mp4" autoplay loop muted playsinline></video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <div class="video-background" id="bg-video-1">
+        <video src="mars.mp4" autoplay loop muted playsinline></video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <div class="main-content">
+        
+        <section class="hero-section">
+            <h1 class="hero-title">
+                Czas na działanie
+                <span>Podejmij Wyzwanie</span>
+            </h1>
+        </section>
+
+        <section class="movies-section trackable" id="section-movies">
+            <div class="section-header">
+                <h2>Adrenalina i Przetrwanie</h2>
+                <p>Produkcje, które napędzają do pokonywania własnych granic i ciągłej walki o więcej.</p>
+                
+                <div class="content-toggle">
+                    <button class="toggle-btn active" onclick="switchCarousel('wrapper-filmy', this)">Filmy Pełnometrażowe</button>
+                    <button class="toggle-btn" onclick="switchCarousel('wrapper-seriale', this)">Seriale</button>
+                    <button class="toggle-btn" onclick="switchCarousel('wrapper-bajki', this)">Bajki i Animacje</button>
+                </div>
+            </div>
+            
+            <div class="orbital-carousel-wrapper active" id="wrapper-filmy">
+                <div class="carousel-controls">
+                    <button class="c-btn c-btn-prev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <button class="c-btn c-btn-next"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                </div>
+
+                <div class="orbital-container">
+                    
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1518467166778-b88f373ffef7?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Misja: Czerwona Planeta</div>
+                            <div class="o-meta"><span class="o-badge">Kosmos</span><span>Film (1h 55m)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Misja: Czerwona Planeta')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Siła Woli</div>
+                            <div class="o-meta"><span class="o-badge">Motywacja</span><span>Film (1h 20m)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Siła Woli')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1522069169874-c58ec4b6005c?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Na Krawędzi Ziemi</div>
+                            <div class="o-meta"><span class="o-badge">Akcja</span><span>Film (1h 30m)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Na Krawędzi Ziemi')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Ostatni Bastion</div>
+                            <div class="o-meta"><span class="o-badge">Wiek 16+</span><span>Film (2h 10m)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Ostatni Bastion')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1541888050664-9b2f6c011e4f?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Potęga Żywiołów</div>
+                            <div class="o-meta"><span class="o-badge">Dokument</span><span>Film (1h 45m)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Potęga Żywiołów')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orbital-carousel-wrapper" id="wrapper-seriale">
+                <div class="carousel-controls">
+                    <button class="c-btn c-btn-prev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <button class="c-btn c-btn-next"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                </div>
+
+                <div class="orbital-container">
+                    
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1618331835717-801e976710b2?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Ekstremalne Przetrwanie</div>
+                            <div class="o-meta"><span class="o-badge">Akcja</span><span>Sezon 1 (10 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Ekstremalne Przetrwanie')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Wyścig z Czasem</div>
+                            <div class="o-meta"><span class="o-badge">Wiek 12-18</span><span>Sezon 1 (8 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Wyścig z Czasem')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Inżynieria Ekstremalna</div>
+                            <div class="o-meta"><span class="o-badge">Technologia</span><span>Sezon 2 (12 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Inżynieria Ekstremalna')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Misja Mars: Baza 1</div>
+                            <div class="o-meta"><span class="o-badge">Wiek 16+</span><span>Miniserial (5 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Misja Mars: Baza 1')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Granice Ciała</div>
+                            <div class="o-meta"><span class="o-badge">Medycyna</span><span>Sezon 3 (8 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinema.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Granice Ciała')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="orbital-carousel-wrapper" id="wrapper-bajki">
+                <div class="carousel-controls">
+                    <button class="c-btn c-btn-prev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <button class="c-btn c-btn-next"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                </div>
+
+                <div class="orbital-container">
+                    
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Kosmiczni Odkrywcy</div>
+                            <div class="o-meta"><span class="o-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Wiek 5+</span><span>Sezon 2 (12 Odcinków)</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinemakid.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Kosmiczni Odkrywcy')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1545642412-25983226db97?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Strażnicy Wulkanów</div>
+                            <div class="o-meta"><span class="o-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Wiek 7+</span><span>Kultowa Animacja</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinemakid.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Strażnicy Wulkanów')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Superbohaterowie Fizyki</div>
+                            <div class="o-meta"><span class="o-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Wiek 6+</span><span>Nauka w Akcji</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinemakid.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Superbohaterowie Fizyki')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Szybki Pędzelek</div>
+                            <div class="o-meta"><span class="o-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Wiek 3+</span><span>Sezon 1</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinemakid.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Szybki Pędzelek')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="orbital-card" style="background-image: url('https://images.unsplash.com/photo-1461360370896-922624d122ea?q=80&w=2000&auto=format&fit=crop');">
+                        <video class="card-trailer" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                        <div class="card-dimmer"></div>
+                        <div class="card-bottom-panel">
+                            <div class="o-title">Eko-Bohaterowie: Akcja</div>
+                            <div class="o-meta"><span class="o-badge" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">Wiek 8+</span><span>Animacja 3D</span></div>
+                            <div class="o-actions">
+                                <button class="action-btn-primary" onclick="window.location.href='cinemakid.html'; event.stopPropagation();"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Obejrzyj</button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Eko-Bohaterowie: Akcja')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="creators-section trackable" id="section-creators">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <h2>Wizje Twórców</h2>
+                <p>Krótsze formy, eksperymenty i ciekawostki bezpośrednio od społeczności EduStream.</p>
+            </div>
+            <div class="creators-container">
+                
+                <div class="slider-controls">
+                    <button class="s-btn" id="slider-prev"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+                    <button class="s-btn" id="slider-next"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                </div>
+
+                <div class="shorts-slider" id="shorts-slider">
+                    
+                    <div class="short-card" onclick="window.location.href='youtube.html'">
+                        <div class="short-thumb-wrapper">
+                            <img src="https://images.unsplash.com/photo-1551041777-ed277b8dd348?q=80&w=400&auto=format&fit=crop" class="short-thumb" alt="Miniaturka">
+                            <div class="play-icon-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <span class="short-duration">08:15</span>
+                        </div>
+                        <div class="short-info">
+                            <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop" class="short-avatar" alt="Kanał">
+                            <div class="short-text">
+                                <h4 class="short-title">Jak przetrwać lawinę? Fizyka śniegu w praktyce</h4>
+                                <div class="short-meta">
+                                    <span>Dawid Fizyka</span>
+                                    <span>12 tys. wyświetleń • 2 dni temu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="short-card" onclick="window.location.href='youtube.html'">
+                        <div class="short-thumb-wrapper">
+                            <img src="https://images.unsplash.com/photo-1517649763962-0c623066013b?q=80&w=400&auto=format&fit=crop" class="short-thumb" alt="Miniaturka">
+                            <div class="play-icon-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <span class="short-duration">12:30</span>
+                        </div>
+                        <div class="short-info">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" class="short-avatar" alt="Kanał">
+                            <div class="short-text">
+                                <h4 class="short-title">Test przeciążeń 9G. Co czuje pilot myśliwca?</h4>
+                                <div class="short-meta">
+                                    <span>AeroEdu</span>
+                                    <span>45 tys. wyświetleń • 1 tydzień temu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="short-card" onclick="window.location.href='youtube.html'">
+                        <div class="short-thumb-wrapper">
+                            <img src="https://images.unsplash.com/photo-1522069169874-c58ec4b6005c?q=80&w=400&auto=format&fit=crop" class="short-thumb" alt="Miniaturka">
+                            <div class="play-icon-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <span class="short-duration">15:45</span>
+                        </div>
+                        <div class="short-info">
+                            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100&auto=format&fit=crop" class="short-avatar" alt="Kanał">
+                            <div class="short-text">
+                                <h4 class="short-title">Skok ze spadochronem - fizyka swobodnego spadania</h4>
+                                <div class="short-meta">
+                                    <span>ExtremeScience</span>
+                                    <span>102 tys. wyświetleń • 3 tyg. temu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="short-card" onclick="window.location.href='youtube.html'">
+                        <div class="short-thumb-wrapper">
+                            <img src="https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?q=80&w=400&auto=format&fit=crop" class="short-thumb" alt="Miniaturka">
+                            <div class="play-icon-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <span class="short-duration">09:20</span>
+                        </div>
+                        <div class="short-info">
+                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&auto=format&fit=crop" class="short-avatar" alt="Kanał">
+                            <div class="short-text">
+                                <h4 class="short-title">Ogień w stanie nieważkości. Szokujące ujęcia!</h4>
+                                <div class="short-meta">
+                                    <span>BioZiemia</span>
+                                    <span>8 tys. wyświetleń • wczoraj</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="short-card" onclick="window.location.href='youtube.html'">
+                        <div class="short-thumb-wrapper">
+                            <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=400&auto=format&fit=crop" class="short-thumb" alt="Miniaturka">
+                            <div class="play-icon-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                            <span class="short-duration">11:05</span>
+                        </div>
+                        <div class="short-info">
+                            <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=100&auto=format&fit=crop" class="short-avatar" alt="Kanał">
+                            <div class="short-text">
+                                <h4 class="short-title">Najszybsze pojazdy świata. Jak łamiemy barierę dźwięku?</h4>
+                                <div class="short-meta">
+                                    <span>CodeMaster PL</span>
+                                    <span>22 tys. wyświetleń • 5 dni temu</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="short-card" style="opacity: 0; pointer-events: none;"></div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="podcasts-section trackable" id="section-podcasts">
+            <div class="section-header">
+                <h2>Zastrzyk Motywacji</h2>
+                <p>Słuchowiska i techniki, które napędzą Cię do działania każdego dnia.</p>
+            </div>
+            <div class="podcast-grid">
+                <div class="podcast-card" onclick="window.location.href='podcasty.html'">
+                    <div class="pod-top">
+                        <div class="pod-cover" style="background-image: url('https://images.unsplash.com/photo-1456324504439-367cee3b3c32?q=80&w=500&auto=format&fit=crop');"></div>
+                        <div class="actions-group">
+                            <button class="action-btn-secondary" onclick="actionFav(event, 'Trening Mentalny')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                            <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Trening Mentalny')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                        </div>
+                    </div>
+                    <div class="pod-bottom">
+                        <div class="pod-texts"><span class="pod-tag" style="margin-bottom: 8px; display: inline-block;">SPORT</span><h3>Trening Mentalny</h3><p>Jak zbudować żelazną psychikę?</p></div>
+                        <div class="pod-player">
+                            <div class="pod-play-group">
+                                <div class="pod-play-mini"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                                <div class="premium-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                            </div>
+                            <span class="pod-duration">34:10</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="podcast-card" onclick="window.location.href='podcasty.html'">
+                    <div class="pod-top">
+                        <div class="pod-cover" style="background-image: url('https://images.unsplash.com/photo-1499506443831-2fb07ceb22e1?q=80&w=500&auto=format&fit=crop');"></div>
+                        <div class="actions-group">
+                            <button class="action-btn-secondary" onclick="actionFav(event, 'Nawyk Wygrywania')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                            <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Nawyk Wygrywania')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                        </div>
+                    </div>
+                    <div class="pod-bottom">
+                        <div class="pod-texts"><span class="pod-tag" style="margin-bottom: 8px; display: inline-block;">MOTYWACJA</span><h3>Nawyk Wygrywania</h3><p>Dlaczego dyscyplina jest ważniejsza od talentu.</p></div>
+                        <div class="pod-player">
+                            <div class="pod-play-group">
+                                <div class="pod-play-mini"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                                <div class="premium-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                            </div>
+                            <span class="pod-duration">45:00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="podcast-card" onclick="window.location.href='podcasty.html'">
+                    <div class="pod-top">
+                        <div class="pod-cover" style="background-image: url('https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?q=80&w=500&auto=format&fit=crop');"></div>
+                        <div class="actions-group">
+                            <button class="action-btn-secondary" onclick="actionFav(event, 'Biologia Adrenaliny')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                            <button class="action-btn-secondary" onclick="openDetailsModal(event, 'Biologia Adrenaliny')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                        </div>
+                    </div>
+                    <div class="pod-bottom">
+                        <div class="pod-texts"><span class="pod-tag" style="margin-bottom: 8px; display: inline-block;">NAUKA</span><h3>Biologia Adrenaliny</h3><p>Co dzieje się z ciałem na krawędzi?</p></div>
+                        <div class="pod-player">
+                            <div class="pod-play-group">
+                                <div class="pod-play-mini"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                                <div class="premium-wave"><span></span><span></span><span></span><span></span><span></span></div>
+                            </div>
+                            <span class="pod-duration">28:40</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="edutalks-section trackable" id="section-edutalks">
+            <div class="section-header">
+                <h2>EduTalks: Przesuwanie Granic</h2>
+                <p>Rozmowy z ludźmi, którzy nie znają słowa "niemożliwe".</p>
+            </div>
+            <div class="edutalks-accordion">
+                <div class="talk-panel" onclick="window.location.href='podcasty.html'">
+                    <img class="talk-bg" src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=2000&auto=format&fit=crop" alt="Guest">
+                    <video class="talk-video" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                    <div class="talk-overlay"></div>
+                    <div class="talk-content">
+                        <span class="talk-guest">Gość: Dr. Anna Nowak</span>
+                        <div class="talk-quote">"Strach to tylko sygnał, że zbliżasz się do przełomu."</div>
+                        <div class="talk-footer">
+                            <button class="talk-play-btn" onclick="event.stopPropagation(); window.location.href='podcasty.html'"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Posłuchaj rozmowy</button>
+                            <div class="actions-group">
+                                <button class="action-btn-secondary" onclick="actionFav(event, 'EduTalk: Dr. Anna Nowak')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'EduTalk: Dr. Anna Nowak')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="talk-panel" onclick="window.location.href='podcasty.html'">
+                    <img class="talk-bg" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=2000&auto=format&fit=crop" alt="Guest">
+                    <video class="talk-video" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                    <div class="talk-overlay"></div>
+                    <div class="talk-content">
+                        <span class="talk-guest">Gość: Tomasz Kowalski</span>
+                        <div class="talk-quote">"Sukces nie wymaga perfekcji. Wymaga nieustępliwości."</div>
+                        <div class="talk-footer">
+                            <button class="talk-play-btn" onclick="event.stopPropagation(); window.location.href='podcasty.html'"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Posłuchaj rozmowy</button>
+                            <div class="actions-group">
+                                <button class="action-btn-secondary" onclick="actionFav(event, 'EduTalk: Tomasz Kowalski')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'EduTalk: Tomasz Kowalski')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="talk-panel" onclick="window.location.href='podcasty.html'">
+                    <img class="talk-bg" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=2000&auto=format&fit=crop" alt="Guest">
+                    <video class="talk-video" data-src="https://www.w3schools.com/html/mov_bbb.mp4" muted loop playsinline></video>
+                    <div class="talk-overlay"></div>
+                    <div class="talk-content">
+                        <span class="talk-guest">Gość: Michał Wiśniewski</span>
+                        <div class="talk-quote">"Działanie zawsze wyprzedza motywację. Zacznij, a energia przyjdzie sama."</div>
+                        <div class="talk-footer">
+                            <button class="talk-play-btn" onclick="event.stopPropagation(); window.location.href='podcasty.html'"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Posłuchaj rozmowy</button>
+                            <div class="actions-group">
+                                <button class="action-btn-secondary" onclick="actionFav(event, 'EduTalk: Michał Wiśniewski')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg></button>
+                                <button class="action-btn-secondary" onclick="openDetailsModal(event, 'EduTalk: Michał Wiśniewski')"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.5"></circle><circle cx="19" cy="12" r="2.5"></circle><circle cx="5" cy="12" r="2.5"></circle></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div> 
+
+    <section class="galaxy-selector-section trackable" id="section-planets">
+        <h2 class="emotion-headline">
+            <span class="tw-line-1" id="tw-small"></span>
+            <span class="tw-line-2" id="tw-large"></span>
+        </h2>
+        
+        <div class="planet-menu hidden-until-typed">
+            <div class="planet-item" data-emotion="Wrażliwość i Zrozumienie" data-desc="Historie, które uczą empatii. Zrozum siebie i otaczający Cię świat. Poczuj głęboką więź." data-target-url="ziemia.html">
+                <div class="planet-orb earth-orb"></div>
+                <span class="planet-name">ZIEMIA</span>
+            </div>
+            <div class="planet-item active" data-emotion="Energia i Działanie" data-desc="Zastrzyk adrenaliny. Produkcje, które napędzają do pokonywania własnych granic i ciągłej walki o więcej." data-target-url="mars.html">
+                <div class="planet-orb mars-orb"></div>
+                <span class="planet-name">MARS</span>
+            </div>
+            <div class="planet-item" data-emotion="Inspiracja i Skupienie" data-desc="Głęboka perspektywa. Poszerzaj horyzonty, zadawaj pytania i odblokuj swój ukryty potencjał." data-target-url="saturn.html">
+                <div class="planet-orb saturn-orb"><div class="saturn-ring"></div></div>
+                <span class="planet-name">SATURN</span>
+            </div>
+        </div>
+
+        <div class="emotion-display hidden-until-typed">
+            <h3 class="e-title" id="emotion-title">Energia i Działanie</h3>
+            <p class="e-desc" id="emotion-desc">Zastrzyk adrenaliny. Produkcje, które napędzają do pokonywania własnych granic i ciągłej walki o więcej.</p>
+            <button class="launch-btn" id="launch-planet-btn" onclick="startPlanetJourney()">
+                Zmień orbitę na MARS 
+                <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </div>
+    </section>
+
+    <script>
+        // Logika Sticky Navbar
+        const mainNav = document.getElementById('main-nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) mainNav.classList.add('scrolled');
+            else mainNav.classList.remove('scrolled');
+        });
+
+        // Przełącznik Szukania
+        function toggleSearch(e) {
+            e.stopPropagation();
+            const wrapper = document.getElementById('searchWrapper');
+            const input = document.getElementById('searchInput');
+            wrapper.classList.toggle('active');
+            if(wrapper.classList.contains('active')) { setTimeout(() => input.focus(), 200); }
+        }
+        document.addEventListener('click', (e) => {
+            const searchWrapper = document.getElementById('searchWrapper');
+            if(searchWrapper && searchWrapper.classList.contains('active') && !searchWrapper.contains(e.target)) {
+                searchWrapper.classList.remove('active');
+            }
+        });
+
+
+        // =========================================================
+        // BAZA DANYCH (TREŚCI DO MODALA)
+        // =========================================================
+        const contentData = {
+            // Filmy
+            'Misja: Czerwona Planeta': { tag: 'Kosmos', meta: 'Film Pełnometrażowy (1h 55m)', desc: 'Kolonizacja to nie tylko inżynieria. To walka o przetrwanie w najbardziej niesprzyjającym środowisku, jakie ludzkość kiedykolwiek próbowała okiełznać.' },
+            'Siła Woli': { tag: 'Motywacja', meta: 'Odcinek Specjalny (50 min)', desc: 'Dlaczego niektórzy poddają się przy pierwszej przeszkodzie, podczas gdy inni idą dalej nawet ze złamaną nogą? Odkryj sekrety niezniszczalnego umysłu.' },
+            'Na Krawędzi Ziemi': { tag: 'Akcja', meta: 'Film Dokumentalny (1h 30m)', desc: 'Ekstremalni wspinacze w drodze na szczyty, których nikt wcześniej nie zdobył.' },
+            'Ostatni Bastion': { tag: 'Wiek 16+', meta: 'Film (2h 10m)', desc: 'Historia najtrudniejszych oblężeń i bitew, w których spryt musiał wygrać z brutalną siłą.' },
+            'Potęga Żywiołów': { tag: 'Dokument', meta: 'Film (1h 45m)', desc: 'Człowiek w starciu z tornadami, tsunami i trzęsieniami ziemi.' },
+
+            // Seriale
+            'Ekstremalne Przetrwanie': { tag: 'Akcja', meta: 'Sezon 1 (10 Odcinków)', desc: 'Bohaterowie postawieni w sytuacjach bez wyjścia. Kiedy technologia zawodzi, jedynym narzędziem staje się siła woli i czysta odwaga.' },
+            'Wyścig z Czasem': { tag: 'Wiek 12-18', meta: 'Sezon 1 (8 Odcinków)', desc: 'Młodzi innowatorzy mają 48 godzin na zaprogramowanie systemu, który uratuje sieć miejską przed upadkiem. Adrenalina gwarantowana.' },
+            'Inżynieria Ekstremalna': { tag: 'Technologia', meta: 'Sezon 2 (12 Odcinków)', desc: 'Budowa stacji bazowych na pustyniach i konstrukcje odporne na ekstremalne ciśnienie. Kiedy zasady fizyki mówią "nie", inżynierowie szukają innej drogi.' },
+            'Misja Mars: Baza 1': { tag: 'Wiek 16+', meta: 'Miniserial (5 Odcinków)', desc: 'Fikcja staje się faktem. Symulacja pierwszego roku w bazie na Czerwonej Planecie.' },
+            'Granice Ciała': { tag: 'Medycyna', meta: 'Sezon 3 (8 Odcinków)', desc: 'Anatomia wysiłku wyczynowego i możliwości regeneracyjne naszego organizmu.' },
+
+            // Bajki
+            'Kosmiczni Odkrywcy': { tag: 'Wiek 5+', meta: 'Sezon 2 (12 Odcinków)', desc: 'Przygody drużyny dzieciaków eksplorujących nowe galaktyki w rakietach napędzanych wiedzą.' },
+            'Strażnicy Wulkanów': { tag: 'Wiek 7+', meta: 'Kultowa Animacja', desc: 'Połączona siła przyrody i supermocy. Jak uratować miasta przed lawą?' },
+            'Superbohaterowie Fizyki': { tag: 'Wiek 6+', meta: 'Nauka w Akcji', desc: 'Każdy superbohater używa tu prawdziwych praw fizyki, by powstrzymać zło.' },
+            'Szybki Pędzelek': { tag: 'Wiek 3+', meta: 'Sezon 1', desc: 'Działanie przez sztukę. Malujemy z dużą energią i rozmachem.' },
+            'Eko-Bohaterowie: Akcja': { tag: 'Wiek 8+', meta: 'Animacja 3D', desc: 'Ratowanie Ziemi wymaga szybkości i sprytu. Ekologia w wydaniu akcji.' },
+
+            // Podcasty & EduTalks
+            'Trening Mentalny': { tag: 'SPORT', meta: 'Odcinek 14 (34 min)', desc: 'Ciało ma swoje granice, ale umysł potrafi je przesuwać. Sprawdzone techniki z najlepszych jednostek wojskowych.' },
+            'Nawyk Wygrywania': { tag: 'MOTYWACJA', meta: 'Odcinek 22 (45 min)', desc: 'Zostaw motywację amatorom. Profesjonaliści opierają się na żelaznej dyscyplinie i nawykach, które wymuszają działanie.' },
+            'Biologia Adrenaliny': { tag: 'NAUKA', meta: 'Odcinek 9 (28 min)', desc: 'Co dzieje się w twoim mózgu tuż przed skokiem na spadochronie? Jak hormony napędzają cię do walki.' },
+            'EduTalk: Dr. Anna Nowak': { tag: 'Wywiad Wideo', meta: 'EduTalks • Akcja', desc: 'Doktor psychologii, która udowadnia, że strach jest kompasem wskazującym drogę do przełomu.' },
+            'EduTalk: Tomasz Kowalski': { tag: 'Wywiad Wideo', meta: 'EduTalks • Motywacja', desc: 'Właściciel trzech firm opowiada, dlaczego 90% sukcesu to po prostu pojawienie się na ringu.' },
+            'EduTalk: Michał Wiśniewski': { tag: 'Wywiad Wideo', meta: 'EduTalks • Przełamywanie Granic', desc: 'Ultramaratończyk o tym, jak budować pęd i dlaczego czekanie na odpowiedni nastrój to kłamstwo.' }
+        };
+
+        // 1. Płynne przewijanie
+        const lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true });
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // 2. Paralaksa wideo
+        lenis.on('scroll', (e) => {
+            const scrollY = window.scrollY;
+            const heroHeight = window.innerHeight;
+            const progress = Math.min(scrollY / heroHeight, 1);
+            document.body.style.setProperty('--v-scale', 1.05 - (progress * 0.05));
+            document.body.style.setProperty('--v-blur', `${progress * 10}px`);
+            document.body.style.setProperty('--v1-opacity', 1 - progress);
+        });
+
+        // 3. Boczna Nawigacja - SCROLL SPY
+        const sections = document.querySelectorAll('section.trackable');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const observerOptions = { root: null, rootMargin: '0px', threshold: 0.4 };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.getAttribute('id');
+                    navDots.forEach(dot => {
+                        dot.classList.remove('active');
+                        if (dot.getAttribute('data-target') === id) { dot.classList.add('active'); }
+                    });
+                }
+            });
+        }, observerOptions);
+        sections.forEach(section => observer.observe(section));
+
+        navDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                const targetId = dot.getAttribute('data-target');
+                const targetSection = document.getElementById(targetId);
+                if(targetSection) { lenis.scrollTo(targetSection, { offset: -50 }); }
+            });
+        });
+
+        // 4. LOGIKA PRZEŁĄCZANIA KART (ZAKŁADKI: Filmy / Seriale / Bajki)
+        function switchCarousel(targetId, btn) {
+            // Zmiana aktywnego guzika
+            const buttons = btn.parentElement.querySelectorAll('.toggle-btn');
+            buttons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Zmiana widocznej karuzeli
+            const wrappers = document.querySelectorAll('#section-movies .orbital-carousel-wrapper');
+            wrappers.forEach(w => w.classList.remove('active'));
+            document.getElementById(targetId).classList.add('active');
+        }
+
+        // 5. LOGIKA DLA WIELU KARUZEL 3D
+        const orbitalWrappers = document.querySelectorAll('.orbital-carousel-wrapper');
+
+        orbitalWrappers.forEach(wrapper => {
+            const cards = wrapper.querySelectorAll('.orbital-card');
+            const btnPrev = wrapper.querySelector('.c-btn-prev');
+            const btnNext = wrapper.querySelector('.c-btn-next');
+            let activeIndex = 2; // Środkowa z 5
+            let trailerTimeout;
+            let hoveredCardIndex = -1;
+
+            function stopAllTrailers() {
+                clearTimeout(trailerTimeout);
+                cards.forEach(card => {
+                    card.classList.remove('is-playing-trailer');
+                    const vid = card.querySelector('.card-trailer');
+                    if (vid) { setTimeout(() => { if(!card.classList.contains('is-playing-trailer')) { vid.pause(); vid.currentTime = 0; } }, 1000); }
+                });
+            }
+
+            function checkTrailer() {
+                stopAllTrailers(); 
+                if (hoveredCardIndex === activeIndex) {
+                    trailerTimeout = setTimeout(() => {
+                        const activeCard = cards[activeIndex];
+                        const vid = activeCard.querySelector('.card-trailer');
+                        if (vid) { 
+                            if (!vid.src && vid.dataset.src) { vid.src = vid.dataset.src; vid.load(); }
+                            vid.play().then(() => { activeCard.classList.add('is-playing-trailer'); }).catch(() => { }); 
+                        }
+                    }, 2000); 
+                }
+            }
+
+            function updateCarousel() {
+                cards.forEach((card, index) => {
+                    const diff = index - activeIndex;
+                    const absDiff = Math.abs(diff);
+                    const tx = diff * 220; const tz = absDiff * -150; const ry = diff * -20; const ty = Math.pow(absDiff, 1.8) * 15; 
+                    const scale = Math.max(0.6, 1 - (absDiff * 0.1));
+                    const isVisible = absDiff <= 2;
+                    const opacity = isVisible ? 1 - (absDiff * 0.15) : 0;
+                    
+                    card.style.transform = `translateX(${tx}px) translateY(${ty}px) translateZ(${tz}px) rotateY(${ry}deg) scale(${scale})`;
+                    card.style.opacity = opacity;
+                    card.style.pointerEvents = isVisible ? 'auto' : 'none'; 
+                    card.style.zIndex = 100 - absDiff;
+                    
+                    const dimmer = card.querySelector('.card-dimmer');
+                    if(dimmer) dimmer.style.opacity = absDiff === 0 ? 0 : 0.7;
+                    if (absDiff === 0) { card.classList.add('is-active'); } else { card.classList.remove('is-active'); }
+                });
+                checkTrailer();
+            }
+
+            cards.forEach((card, index) => {
+                card.addEventListener('mouseenter', () => { hoveredCardIndex = index; checkTrailer(); });
+                card.addEventListener('mouseleave', () => { hoveredCardIndex = -1; stopAllTrailers(); });
+                card.addEventListener('click', (e) => { if (activeIndex !== index) { activeIndex = index; updateCarousel(); } });
+            });
+
+            if(btnPrev && btnNext) {
+                btnPrev.addEventListener('click', () => { if (activeIndex > 0) { activeIndex--; updateCarousel(); } });
+                btnNext.addEventListener('click', () => { if (activeIndex < cards.length - 1) { activeIndex++; updateCarousel(); } });
+            }
+
+            // Inicjalizacja danej karuzeli
+            updateCarousel();
+        });
+
+
+        // 6. SLIDER POZIOMY (WIZJE TWÓRCÓW)
+        const shortsSlider = document.getElementById('shorts-slider');
+        const sBtnPrev = document.getElementById('slider-prev');
+        const sBtnNext = document.getElementById('slider-next');
+
+        if(sBtnPrev && sBtnNext && shortsSlider) {
+            sBtnPrev.addEventListener('click', () => { shortsSlider.scrollBy({ left: -320, behavior: 'smooth' }); });
+            sBtnNext.addEventListener('click', () => { shortsSlider.scrollBy({ left: 320, behavior: 'smooth' }); });
+        }
+
+
+        // 7. FUNKCJE PRZYCISKÓW W KARTACH I MODALU
+        function actionFav(e, title) { 
+            e.stopPropagation(); 
+            const svg = e.currentTarget.querySelector('svg'); 
+            svg.style.fill = svg.style.fill === 'currentColor' ? 'none' : 'currentColor'; 
+        }
+
+        const modal = document.getElementById('details-modal');
+        const mTitle = document.getElementById('mdl-title');
+        const mTag = document.getElementById('mdl-tag');
+        const mMeta = document.getElementById('mdl-meta');
+        const mDesc = document.getElementById('mdl-desc');
+
+        function openDetailsModal(e, title) { 
+            e.stopPropagation(); 
+            const data = contentData[title];
+
+            if(data) {
+                mTitle.innerText = title;
+                mTag.innerText = data.tag;
+                mMeta.innerText = data.meta;
+                mDesc.innerText = data.desc;
+            } else {
+                mTitle.innerText = title;
+                mTag.innerText = "Info";
+                mMeta.innerText = "Brak dodatkowych informacji";
+                mDesc.innerText = "Opis tego materiału nie został jeszcze dodany.";
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto'; 
+        }
+
+
+        // 8. EDUTALKS ACCORDION WIDEO Z LAZY LOADINGIEM
+        const talkPanels = document.querySelectorAll('.talk-panel');
+        talkPanels.forEach(panel => {
+            const vid = panel.querySelector('.talk-video');
+            if(vid) {
+                panel.addEventListener('mouseenter', () => { 
+                    if (!vid.src && vid.dataset.src) { vid.src = vid.dataset.src; vid.load(); }
+                    vid.play().catch(e => {}); 
+                });
+                panel.addEventListener('mouseleave', () => { 
+                    vid.pause(); 
+                    setTimeout(() => { if(vid.paused) vid.currentTime = 0; }, 600); 
+                });
+            }
+        });
+
+        // 9. GALAXY SELECTOR (Planety CSS Orbity i Przekierowanie)
+        const planetItems = document.querySelectorAll('.planet-item');
+        const emotionTitle = document.getElementById('emotion-title');
+        const emotionDesc = document.getElementById('emotion-desc');
+        const launchBtn = document.getElementById('launch-planet-btn');
+        
+        let selectedPlanetUrl = "mars.html"; // Domyślnie Mars, bo on jest aktywny na start w tym dokumencie
+
+        planetItems.forEach(item => {
+            ['mouseenter', 'click'].forEach(evt => {
+                item.addEventListener(evt, () => {
+                    planetItems.forEach(b => b.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    emotionTitle.style.opacity = 0;
+                    emotionDesc.style.opacity = 0;
+                    
+                    const planetName = item.querySelector('.planet-name').innerText;
+                    
+                    // Aktualizujemy zmienną docelową dla przycisku
+                    selectedPlanetUrl = item.getAttribute('data-target-url');
+
+                    setTimeout(() => {
+                        emotionTitle.innerText = item.getAttribute('data-emotion');
+                        emotionDesc.innerText = item.getAttribute('data-desc');
+                        launchBtn.innerHTML = `Zmień orbitę na ${planetName} <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>`;
+                        
+                        emotionTitle.style.opacity = 1;
+                        emotionDesc.style.opacity = 1;
+                    }, 300);
+                });
+            });
+        });
+
+        // Funkcja odpowiedzialna za start podróży do innej planety
+        function startPlanetJourney() {
+            // Tworzymy na bieżąco warstwę zaciemniającą
+            let fadeOverlay = document.getElementById('fade-overlay');
+            if (!fadeOverlay) {
+                fadeOverlay = document.createElement('div');
+                fadeOverlay.id = 'fade-overlay';
+                fadeOverlay.style.position = 'fixed';
+                fadeOverlay.style.top = '0';
+                fadeOverlay.style.left = '0';
+                fadeOverlay.style.width = '100vw';
+                fadeOverlay.style.height = '100vh';
+                fadeOverlay.style.backgroundColor = '#000';
+                fadeOverlay.style.zIndex = '9999';
+                fadeOverlay.style.opacity = '0';
+                fadeOverlay.style.pointerEvents = 'none';
+                fadeOverlay.style.transition = 'opacity 1.5s ease-in-out';
+                document.body.appendChild(fadeOverlay);
+            }
+
+            // Rozpoczynamy płynne zaciemnianie ekranu
+            setTimeout(() => {
+                fadeOverlay.style.opacity = '1';
+            }, 50);
+
+            // Po wygaszeniu, zmieniamy stronę
+            setTimeout(() => {
+                window.location.href = selectedPlanetUrl;
+            }, 1500);
+        }
+
+        // 10. TYPEWRITER EFFECT
+        const textSmall = "obudź w sobie ogień.";
+        const textLarge = "przekrocz własne granice.";
+        const elSmall = document.getElementById('tw-small');
+        const elLarge = document.getElementById('tw-large');
+        const hiddenElements = document.querySelectorAll('.hidden-until-typed');
+        let hasTyped = false;
+
+        function startTypewriter() {
+            if (hasTyped) return;
+            hasTyped = true;
+            let i = 0;
+            elSmall.classList.add('cursor-active-1');
+            
+            function typeSmall() {
+                if (i < textSmall.length) {
+                    elSmall.innerHTML = textSmall.substring(0, i+1);
+                    i++;
+                    setTimeout(typeSmall, 50);
+                } else {
+                    elSmall.classList.remove('cursor-active-1');
+                    elLarge.classList.add('cursor-active-2');
+                    setTimeout(typeLarge, 200);
+                }
+            }
+            
+            let j = 0;
+            function typeLarge() {
+                if (j < textLarge.length) {
+                    elLarge.innerHTML = textLarge.substring(0, j+1);
+                    j++;
+                    setTimeout(typeLarge, 60);
+                } else {
+                    elLarge.classList.remove('cursor-active-2');
+                    setTimeout(() => {
+                        hiddenElements.forEach(el => el.classList.add('revealed'));
+                    }, 300);
+                }
+            }
+            typeSmall();
+        }
+
+        const finalSectionObserver = new IntersectionObserver((entries) => {
+            if(entries[0].isIntersecting) { startTypewriter(); }
+        }, { threshold: 0.6 });
+
+        finalSectionObserver.observe(document.getElementById('section-planets'));
+
+    </script>
+</body>
+</html>

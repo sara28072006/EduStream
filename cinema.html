@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Odtwarzacz Kinowy (Premium & Study)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        :root {
+            /* Akcenty stałe (w obu motywach) */
+            --accent-color: #0A84FF;
+            --accent-hover: #3b9fff;
+            --lightning-gold: #FFD700;
+            --success-green: #34C759;
+
+            /* Zmienne dla motywu CIEMNEGO (Domyślne) */
+            --bg-dark: #000000;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.7);
+            --glass-bg: rgba(0, 0, 0, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --nav-bg-1: rgba(0, 0, 0, 0.8);
+            --nav-bg-2: rgba(0, 0, 0, 0.2);
+            --sidebar-bg: rgba(10, 10, 10, 0.85);
+            --input-bg: rgba(255,255,255,0.05);
+            --shadow-strong: rgba(0,0,0,0.5);
+            --video-bg: #000;
+        }
+
+        /* Zmienne dla motywu JASNEGO (Apple Style) */
+        html[data-theme="light"] {
+            --bg-dark: #f5f5f7; /* Chłodny, jasny szary z Apple */
+            --text-main: #1d1d1f; /* Ciemny grafitowy tekst Apple */
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --nav-bg-1: rgba(245, 245, 247, 0.9);
+            --nav-bg-2: rgba(245, 245, 247, 0.1);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --input-bg: rgba(0,0,0,0.04);
+            --shadow-strong: rgba(0,0,0,0.15);
+            --video-bg: #e5e5e5;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            overflow: hidden; height: 100vh; width: 100vw; transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* --- ODTWARZACZ GŁÓWNY KONTENER --- */
+        .player-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: var(--video-bg); transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;}
+        /* Gdy otworzymy EduNotes (boczny panel), lekko przesuwamy wideo w lewo */
+        .player-container.panel-open { width: calc(100% - 420px); }
+        
+        .video-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+
+        /* EFEKT FLESZA Z APARATU (Smart Snapshot) */
+        .camera-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 5; opacity: 0; pointer-events: none; }
+        .camera-flash.active { animation: flashAnim 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
+
+        /* --- INTERFEJS ODTWARZACZA (UI) --- */
+        .player-ui {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between; transition: opacity 0.5s ease;
+            background: linear-gradient(to bottom, var(--nav-bg-1) 0%, transparent 15%, transparent 80%, rgba(0,0,0,0.9) 100%);
+        }
+        /* W jasnym motywie dolny pasek też musi być czytelny na białym tle, więc robimy mu delikatny ciemny gradient z dołu */
+        html[data-theme="light"] .player-ui {
+            background: linear-gradient(to bottom, var(--nav-bg-1) 0%, transparent 15%, transparent 80%, rgba(0,0,0,0.5) 100%);
+        }
+        
+        .player-container.idle .player-ui { opacity: 0; cursor: none; pointer-events: none; }
+
+        /* --- GÓRNY PASEK --- */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 30px 40px; }
+        .top-left { display: flex; align-items: center; gap: 20px; }
+        .back-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; backdrop-filter: blur(10px); transition: 0.3s; }
+        .back-btn:hover { background: var(--glass-hover); transform: scale(1.05); }
+        .movie-title { font-size: 20px; font-weight: 600; text-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        /* W jasnym motywie upewniamy się, że tytuł filmu zawsze jest na biało, bo leży na ciemniejącym gradiencie wideo */
+        html[data-theme="light"] .movie-title { color: #1d1d1f; text-shadow: 0 2px 10px rgba(255,255,255,0.8);}
+
+        .top-right { display: flex; align-items: center; gap: 15px; }
+
+        /* Przycisk motywu */
+        .theme-toggle-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-muted); width: 40px; height: 40px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; backdrop-filter: blur(10px);
+        }
+        .theme-toggle-btn:hover { color: var(--accent-color); background: var(--glass-hover); border-color: var(--accent-color); }
+        .theme-toggle-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        /* Kino Grupowe (Awatary na górze) */
+        .watch-party-group { display: flex; align-items: center; background: var(--glass-bg); padding: 5px 12px 5px 5px; border-radius: 30px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px); cursor: pointer; transition: 0.3s;}
+        .watch-party-group:hover { background: var(--glass-hover); border-color: var(--accent-color); }
+        .wp-avatars { display: flex; }
+        .wp-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid var(--bg-dark); margin-right: -10px; position: relative; z-index: 1; transition: 0.4s;}
+        .wp-avatar:nth-child(2) { z-index: 2; }
+        .wp-avatar:nth-child(3) { z-index: 3; }
+        .wp-count { margin-left: 16px; font-size: 12px; font-weight: 600; color: var(--success-green); display: flex; align-items: center; gap: 4px; }
+        .wp-count::before { content: ''; width: 6px; height: 6px; background: var(--success-green); border-radius: 50%; box-shadow: 0 0 5px var(--success-green); animation: pulse 2s infinite; }
+
+        .xray-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 10px 20px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .xray-btn:hover { background: var(--glass-hover); transform: translateY(-2px); box-shadow: 0 5px 15px var(--shadow-strong); }
+
+        /* --- PRZYCISK: POMIŃ CZOŁÓWKĘ --- */
+        .skip-intro-btn { position: absolute; bottom: 120px; right: 40px; background: rgba(255,255,255,0.15); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .skip-intro-btn:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); border-color: white; }
+        .skip-intro-btn svg { width: 18px; height: 18px; fill: white; }
+
+        /* --- DOLNY PASEK (KONTROLKI) --- */
+        .bottom-bar { padding: 0 40px 30px 40px; display: flex; flex-direction: column; gap: 15px; position: relative; }
+        /* Upewniamy się, że kontrolki na dole (czas, przyciski) są zawsze białe niezależnie od motywu, bo są na tle filmu! */
+        .bottom-bar, .bottom-bar .control-btn, .bottom-bar .time-display { color: white; }
+
+        /* SZKLANY BIAŁY PASEK POSTĘPU Z ZANIKAJĄCYMI ROZDZIAŁAMI */
+        .progress-container { width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; transition: height 0.2s; display: flex; }
+        .progress-container:hover { height: 10px; }
+        
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 45%; background: linear-gradient(90deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,1) 100%); border-radius: 3px; box-shadow: 0 0 10px rgba(255,255,255,0.6); pointer-events: none; z-index: 2; }
+        
+        .chapter-break { position: absolute; top: 0; height: 100%; width: 2px; background: #000; z-index: 3; opacity: 0; transition: opacity 0.2s; }
+        .progress-container:hover .chapter-break { opacity: 0.5; }
+        
+        .break-1 { left: 15%; }
+        .break-2 { left: 45%; }
+        .break-3 { left: 70%; }
+
+        .progress-thumb { position: absolute; right: -6px; top: 50%; transform: translateY(-50%) scale(0); width: 16px; height: 16px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 0 12px rgba(255,255,255,0.8); z-index: 5; }
+        .progress-container:hover .progress-thumb { transform: translateY(-50%) scale(1); }
+
+        .chapter-tooltip { position: absolute; bottom: 25px; left: 0; transform: translateX(-50%); background: rgba(0,0,0,0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.2); padding: 8px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; opacity: 0; pointer-events: none; transition: opacity 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 20; color: white;}
+        .progress-container:hover .chapter-tooltip { opacity: 1; }
+        .tooltip-img { width: 140px; height: 80px; border-radius: 6px; object-fit: cover; }
+        .tooltip-text { font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+
+        .controls-row { display: flex; justify-content: space-between; align-items: center; }
+        .controls-left, .controls-right { display: flex; align-items: center; gap: 15px; }
+        .control-btn { background: none; border: none; cursor: pointer; opacity: 0.8; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+        .control-btn:hover { opacity: 1; transform: scale(1.1); text-shadow: 0 0 10px rgba(255,255,255,0.5); filter: drop-shadow(0 0 8px rgba(255,255,255,0.5));}
+        .play-pause-btn { opacity: 1; width: 40px; height: 40px; }
+        .play-pause-btn svg { width: 32px; height: 32px; fill: currentColor; }
+        .time-display { font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; opacity: 0.9; margin-left: 5px;}
+
+        /* PIORUN KOMPRESJI AI */
+        .lightning-btn {
+            display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; color: white; cursor: pointer; transition: all 0.3s;
+        }
+        .lightning-btn svg { width: 16px; height: 16px; fill: transparent; stroke: white; transition: 0.3s; }
+        .lightning-btn:hover { background: rgba(255,255,255,0.2); }
+        .lightning-btn.active {
+            background: rgba(255, 215, 0, 0.15); border-color: var(--lightning-gold); color: var(--lightning-gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3); animation: pulseGold 2s infinite;
+        }
+        .lightning-btn.active svg { fill: var(--lightning-gold); stroke: var(--lightning-gold); }
+        @keyframes pulseGold { 0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(255, 215, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); } }
+
+        .snapshot-btn { opacity: 0.8; transition: 0.2s; position: relative; }
+
+        .ai-dubbing-btn { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, rgba(10, 132, 255, 0.2), rgba(94, 92, 230, 0.2)); border: 1px solid rgba(10, 132, 255, 0.4); padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s; color: white; }
+        .ai-dubbing-btn:hover { background: linear-gradient(135deg, rgba(10, 132, 255, 0.4), rgba(94, 92, 230, 0.4)); }
+        .ai-dubbing-btn.active { background: var(--accent-color); border-color: white; }
+
+        /* --- BOCZNY PANEL --- */
+        .side-panel {
+            position: absolute; top: 0; right: -450px; width: 420px; height: 100%; z-index: 50;
+            background: var(--sidebar-bg); backdrop-filter: blur(25px); border-left: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: -10px 0 30px var(--shadow-strong);
+        }
+        .side-panel.active { right: 0; }
+
+        .panel-header { display: flex; justify-content: space-between; align-items: center; padding: 25px 30px; border-bottom: 1px solid var(--glass-border); }
+        .panel-title { font-size: 18px; font-weight: 600; }
+        .close-panel-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); width: 32px; height: 32px; border-radius: 50%; color: var(--text-muted); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; }
+        .close-panel-btn:hover { color: var(--text-main); background: var(--glass-hover); transform: rotate(90deg); }
+
+        .panel-tabs { display: flex; padding: 0 10px; border-bottom: 1px solid var(--glass-border); overflow-x: auto; }
+        .panel-tabs::-webkit-scrollbar { display: none; }
+        .panel-tab { background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 600; padding: 15px; cursor: pointer; position: relative; transition: 0.3s; font-family: inherit; white-space: nowrap;}
+        .panel-tab:hover { color: var(--text-main); }
+        .panel-tab.active { color: var(--text-main); }
+        .panel-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--text-main); box-shadow: 0 -2px 10px rgba(10, 132, 255, 0.5); }
+
+        .panel-content { flex-grow: 1; padding: 30px; overflow-y: auto; display: none; animation: fadeIn 0.3s ease; }
+        .panel-content.active { display: block; }
+        .panel-content::-webkit-scrollbar { width: 4px; }
+        .panel-content::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- ZAKŁADKI ZAWARTOŚĆ --- */
+        
+        /* 1. EDUNOTES */
+        .notes-toolbar { display: flex; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--glass-border); }
+        .format-btn { background: var(--glass-bg); border: 1px solid transparent; color: var(--text-muted); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+        .format-btn:hover { background: var(--glass-hover); color: var(--text-main); }
+
+        .editor-area { width: 100%; min-height: 200px; background: transparent; border: none; color: var(--text-main); font-family: inherit; font-size: 14px; line-height: 1.6; resize: none; outline: none; transition: 0.4s;}
+        .editor-area::placeholder { color: var(--text-muted); }
+
+        /* Karta Snapshotu wrzucona do notatnika */
+        .note-snapshot-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; animation: slideIn 0.4s ease; margin-bottom: 15px; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        .snap-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
+        .snap-meta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--accent-color); font-weight: 600; }
+        .snap-caption { font-size: 13px; color: var(--text-main); font-style: italic; border-left: 2px solid var(--accent-color); padding-left: 10px;}
+
+        /* Przełącznik AI Notatki */
+        .ai-notes-header { display: flex; justify-content: space-between; align-items: center; background: rgba(10, 132, 255, 0.05); border: 1px solid rgba(10, 132, 255, 0.2); padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; }
+        .ai-listening-indicator { display: none; align-items: center; gap: 8px; color: var(--accent-color); font-size: 12px; font-weight: 600; margin-bottom: 10px; animation: fadeIn 0.3s ease;}
+        .ai-spinner { width: 14px; height: 14px; border: 2px solid rgba(10, 132, 255, 0.3); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-border); transition: .4s; border-radius: 24px; border: 1px solid var(--glass-border); }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .toggle-slider { background-color: var(--accent-color); border-color: var(--accent-color); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        /* 2. WATCH PARTY & WYSYŁANIE NA CZACIE */
+        .wp-link-box { background: var(--input-bg); border: 1px solid var(--glass-border); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+        .wp-link-input { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-muted); font-family: monospace; font-size: 13px; padding: 10px; border-radius: 8px; outline: none; width: 100%; user-select: all; text-align: center; }
+        .wp-actions { display: flex; gap: 10px; }
+        .wp-action-btn { flex: 1; background: var(--glass-bg); color: var(--text-main); border: 1px solid transparent; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center; gap: 6px; }
+        .wp-action-btn:hover { background: var(--glass-hover); }
+        .wp-action-btn.primary { background: var(--accent-color); color: white; }
+        .wp-action-btn.primary:hover { background: var(--accent-hover); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3); }
+
+        .friend-selector { background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; margin-top: -5px; margin-bottom: 25px; overflow: hidden; display: none; animation: fadeIn 0.3s ease; }
+        .friend-selector.active { display: block; }
+        .friend-selector-header { padding: 10px 15px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--glass-border); text-transform: uppercase; letter-spacing: 0.5px;}
+        .friend-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; cursor: pointer; transition: 0.2s; border-bottom: 1px solid var(--glass-border); }
+        .friend-item:last-child { border-bottom: none; }
+        .friend-item:hover { background: var(--glass-hover); }
+        .friend-info { display: flex; align-items: center; gap: 10px; }
+        .friend-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        .friend-name { font-size: 14px; font-weight: 500; color: var(--text-main); }
+        .send-chat-icon { width: 18px; height: 18px; color: var(--accent-color); transition: transform 0.3s; }
+        .friend-item:hover .send-chat-icon { transform: translateX(3px) scale(1.1); }
+
+        .wp-friend { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--glass-border); }
+        .wp-friend-info { display: flex; align-items: center; gap: 10px; }
+        .wp-friend-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+        .wp-status { font-size: 11px; background: rgba(74, 222, 128, 0.2); color: var(--success-green); padding: 2px 6px; border-radius: 4px; font-weight: 600;}
+
+        /* 3. OPINIE PREMIUM ORAZ NOWA RECENZJA */
+        .add-review-box { display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 20px; border-radius: 16px;}
+        .review-input { background: var(--input-bg); border: 1px solid var(--glass-border); padding: 12px; border-radius: 12px; color: var(--text-main); font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 70px; transition: 0.3s; }
+        .review-input:focus { border-color: var(--accent-color); }
+        
+        .interactive-stars { display: flex; gap: 5px; cursor: pointer; }
+        .interactive-stars svg { width: 22px; height: 22px; fill: transparent; stroke: var(--text-muted); stroke-width: 2; transition: 0.2s;}
+        .interactive-stars svg.active, .interactive-stars svg:hover { fill: var(--lightning-gold); stroke: var(--lightning-gold); }
+        
+        .submit-review-btn { background: var(--accent-color); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 600; cursor: pointer; align-self: flex-end; transition: 0.3s; font-size: 13px;}
+        .submit-review-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);}
+
+        .premium-review { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; transition: 0.3s; }
+        .premium-review:hover { transform: translateY(-3px); border-color: var(--accent-color); box-shadow: 0 10px 20px var(--shadow-strong); }
+        .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .reviewer-info { display: flex; align-items: center; gap: 12px; }
+        .reviewer-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); }
+        .reviewer-name { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 3px; }
+        .reviewer-badge { display: inline-block; font-size: 10px; background: rgba(10, 132, 255, 0.2); color: #0A84FF; padding: 3px 6px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .reviewer-badge.teacher { background: rgba(52, 199, 89, 0.2); color: var(--success-green); }
+        .review-rating { display: flex; gap: 2px; color: var(--lightning-gold); }
+        .review-rating svg { width: 14px; height: 14px; fill: currentColor; }
+        .review-text { font-size: 14px; line-height: 1.6; color: var(--text-main); opacity: 0.9; margin-bottom: 15px; }
+        .review-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--glass-border); padding-top: 12px; }
+        .helpful-btn { background: none; border: none; color: var(--text-muted); display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; transition: 0.3s; font-weight: 600;}
+        .helpful-btn:hover { color: var(--text-main); }
+        .helpful-btn.active { color: var(--accent-color); }
+        .helpful-btn svg { width: 14px; height: 14px; }
+        .review-date { font-size: 12px; color: var(--text-muted); }
+
+        /* AI Powiadomienie (Toast) */
+        .ai-toast { position: absolute; top: 100px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--nav-bg-1); border: 1px solid var(--glass-border); backdrop-filter: blur(15px); color: var(--text-main); padding: 12px 24px; border-radius: 30px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: all 0.4s ease; z-index: 100; box-shadow: 0 10px 30px var(--shadow-strong); }
+        .ai-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .ai-toast.snapshot { background: var(--text-main); color: var(--bg-dark); }
+        .ai-toast.success { background: var(--success-green); color: white; border-color: rgba(255,255,255,0.3); }
+
+    </style>
+</head>
+<body>
+
+    <div class="player-container" id="playerContainer">
+        
+        <img src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop" class="video-layer" id="mainVideo" alt="Film Scene">
+        <div class="camera-flash" id="cameraFlash"></div>
+
+        <div class="ai-toast" id="mainToast">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" id="toastIcon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+            <span id="toastText">Wiadomość</span>
+        </div>
+
+        <div class="player-ui" id="playerUI">
+            <div class="top-bar">
+                <div class="top-left">
+                    <button class="back-btn" onclick="history.back()" title="Wróć">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    </button>
+                    <div class="movie-title">Tajemnice Wszechświata: Odcinek 4</div>
+                </div>
+                <div class="top-right">
+                    
+                    <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw jasny/ciemny">
+                        <svg id="themeIcon" viewBox="0 0 24 24">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+
+                    <div class="watch-party-group" title="Kino Grupowe" onclick="openWatchPartyTab()">
+                        <div class="wp-avatars">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" class="wp-avatar" alt="Ty">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" class="wp-avatar" alt="Znajomy 1">
+                            <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=100&auto=format&fit=crop" class="wp-avatar" alt="Znajomy 2">
+                        </div>
+                        <span class="wp-count">Wspólnie</span>
+                    </div>
+
+                    <button class="xray-btn" onclick="toggleSidePanel()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                        Otwórz Panel (EduNotes)
+                    </button>
+                </div>
+            </div>
+
+            <button class="skip-intro-btn" id="skipBtn" onclick="skipIntro()">
+                Pomiń czołówkę 
+                <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></line></svg>
+            </button>
+
+            <div class="bottom-bar">
+                
+                <div class="progress-container" id="progressBar" onmousemove="moveTooltip(event)" onmouseleave="hideTooltip()">
+                    <div class="progress-fill">
+                        <div class="progress-thumb"></div>
+                    </div>
+                    
+                    <div class="chapter-break break-1" data-title="Wstęp: Początek Czasu" data-img="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=200"></div>
+                    <div class="chapter-break break-2" data-title="Teoria Grawitacji" data-img="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=200"></div>
+                    <div class="chapter-break break-3" data-title="Narodziny Pierwszych Gwiazd" data-img="https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=200"></div>
+
+                    <div class="chapter-tooltip" id="chapTooltip">
+                        <img src="" id="tooltipImg" class="tooltip-img" alt="Thumbnail">
+                        <span id="tooltipTitle" class="tooltip-text">Rozdział</span>
+                    </div>
+                </div>
+
+                <div class="controls-row">
+                    <div class="controls-left">
+                        <button class="control-btn play-pause-btn" id="playBtn">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+                        </button>
+                        <button class="control-btn" title="Cofnij o 10s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><polygon points="11 19 2 12 11 5 11 19"></polygon><polygon points="22 19 13 12 22 5 22 19"></polygon></svg></button>
+                        <button class="control-btn" title="Głośność"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg></button>
+                        <div class="time-display">45:12 / 1:20:00</div>
+                    </div>
+
+                    <div class="controls-right">
+                        
+                        <button class="lightning-btn" id="compressBtn" onclick="toggleCompression()" title="Piorun Kompresji AI: Skróć wideo usuwając ciszę">
+                            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                            <span id="compressText">Kompresja AI</span>
+                        </button>
+
+                        <button class="control-btn snapshot-btn" title="Zapisz kadr z cytatem do Notatek" onclick="takeSnapshot()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                        </button>
+
+                        <button class="ai-dubbing-btn" id="aiDubBtn" onclick="toggleDubbing()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            Dubbing AI
+                        </button>
+                        <button class="control-btn" title="Napisy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="18" y2="16"></line><line x1="6" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="18" y2="12"></line></svg></button>
+                        
+                        <button class="control-btn" title="Pełny Ekran" onclick="toggleFullScreen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-panel" id="sidePanel">
+        <div class="panel-header">
+            <div class="panel-title">Materiały Dodatkowe</div>
+            <button class="close-panel-btn" onclick="toggleSidePanel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        
+        <div class="panel-tabs">
+            <button class="panel-tab active" onclick="switchPanelTab('tab-notes', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:inline; margin-right:4px; vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                EduNotes
+            </button>
+            <button class="panel-tab" id="tabBtnWatchParty" onclick="switchPanelTab('tab-party', this)">Kino Grupowe</button>
+            <button class="panel-tab" onclick="switchPanelTab('tab-comments', this)">Opinie</button>
+        </div>
+
+        <div class="panel-content active" id="tab-notes" style="padding: 20px;">
+            
+            <div class="ai-notes-header">
+                <div>
+                    <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">✨ Auto-Notatki AI</span>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Sztuczna inteligencja wyłapie i zapisze za Ciebie najważniejsze wątki.</p>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="aiNotesToggle" onchange="toggleAINotes(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            
+            <div class="ai-listening-indicator" id="aiListening">
+                <div class="ai-spinner"></div> EduStream AI nasłuchuje...
+            </div>
+
+            <div class="notes-toolbar">
+                <button class="format-btn"><b>B</b></button>
+                <button class="format-btn"><i>I</i></button>
+                <button class="format-btn"><u style="text-decoration: underline;">U</u></button>
+            </div>
+
+            <div style="flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; padding-right: 5px;" id="notesContentArea">
+                <textarea class="editor-area" id="liveNotesArea" placeholder="Zapisz swoje przemyślenia... Notatki zapisują się automatycznie na Twoim koncie."></textarea>
+            </div>
+        </div>
+
+        <div class="panel-content" id="tab-party">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Zaproś znajomych do wspólnego oglądania. Odtwarzacz zsynchronizuje się u każdego!</p>
+            
+            <div class="wp-link-box">
+                <span style="font-size: 12px; font-weight: 600; text-transform: uppercase;">Link dostępu do pokoju</span>
+                <input type="text" class="wp-link-input" value="https://edustream.pl/party/x7k-9bz-q2w" readonly id="wpLink">
+                <div class="wp-actions">
+                    <button class="wp-action-btn" onclick="copyWatchLink(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                        Kopiuj
+                    </button>
+                    <button class="wp-action-btn primary" onclick="toggleFriendList()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Wyślij na czacie
+                    </button>
+                </div>
+            </div>
+
+            <div class="friend-selector" id="friendSelector">
+                <div class="friend-selector-header">Wybierz osobę z Twojej klasy:</div>
+                <div class="friend-item" onclick="sendInviteToFriend('Kamil T.')">
+                    <div class="friend-info">
+                        <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=100" class="friend-avatar">
+                        <span class="friend-name">Kamil T.</span>
+                    </div>
+                    <svg class="send-chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+                <div class="friend-item" onclick="sendInviteToFriend('Ania W.')">
+                    <div class="friend-info">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100" class="friend-avatar">
+                        <span class="friend-name">Ania W.</span>
+                    </div>
+                    <svg class="send-chat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </div>
+            </div>
+
+            <h4 style="font-size: 14px; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">Obecni (3/10)</h4>
+            <div class="wp-friend">
+                <div class="wp-friend-info">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100" class="wp-friend-img">
+                    <div>
+                        <div style="font-size: 14px; font-weight: 600;">Ty (Michał D.)</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">Host (Zarządza wideo)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="wp-friend">
+                <div class="wp-friend-info">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100" class="wp-friend-img">
+                    <div style="font-size: 14px; font-weight: 600;">Ania W.</div>
+                </div>
+                <span class="wp-status">Zsynchronizowano</span>
+            </div>
+        </div>
+
+        <div class="panel-content" id="tab-comments">
+            
+            <div style="background: var(--input-bg); border: 1px solid var(--glass-border); padding: 20px; border-radius: 16px; margin-bottom: 30px;">
+                <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 10px;">Oceń ten materiał</h4>
+                <div style="display: flex; gap: 5px; margin-bottom: 15px; cursor: pointer;" id="starRater">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="2" onclick="setRating(1)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="2" onclick="setRating(2)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="2" onclick="setRating(3)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="2" onclick="setRating(4)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="var(--text-muted)" stroke-width="2" onclick="setRating(5)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <textarea style="width: 100%; background: transparent; border: 1px solid var(--glass-border); padding: 10px; border-radius: 8px; color: var(--text-main); font-family: inherit; font-size: 13px; outline: none; resize: vertical; min-height: 60px; margin-bottom: 10px;" placeholder="Napisz co sądzisz o tym filmie..."></textarea>
+                <button style="background: var(--accent-color); color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 600; font-size: 13px; cursor: pointer; float: right; transition: 0.3s;" onclick="showToast('Dziękujemy! Recenzja została dodana.', 'default')">Opublikuj</button>
+                <div style="clear: both;"></div>
+            </div>
+
+            <div class="premium-review">
+                <div class="review-header">
+                    <div class="reviewer-info">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100" class="reviewer-avatar">
+                        <div>
+                            <div class="reviewer-name">Prof. Janusz Biel</div>
+                            <div class="reviewer-badge teacher">Nauczyciel Fizyki</div>
+                        </div>
+                    </div>
+                    <div class="review-rating">
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    </div>
+                </div>
+                <div class="review-text">Znakomity materiał. Bardzo rzetelnie i prosto wyjaśnione zjawiska powstawania czarnych dziur. Oglądam to z moimi uczniami na lekcjach!</div>
+                <div class="review-footer">
+                    <span class="review-date">Dodano 2 tyg. temu</span>
+                    <button class="helpful-btn active" onclick="toggleHelpful(this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+                        <span>124 Pomocne</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIKA MOTYWU (JASNY/CIEMNY) ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            
+            if (html.getAttribute('data-theme') === 'light') {
+                // Wróć do ciemnego
+                html.setAttribute('data-theme', 'dark');
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                // Włącz jasny (Apple Style)
+                html.setAttribute('data-theme', 'light');
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        // --- AUTO-HIDE UI ---
+        let idleTimer;
+        const playerContainer = document.getElementById('playerContainer');
+        const sidePanel = document.getElementById('sidePanel');
+
+        function resetIdleTimer() {
+            if (sidePanel.classList.contains('active')) {
+                playerContainer.classList.remove('idle');
+                clearTimeout(idleTimer); return;
+            }
+            playerContainer.classList.remove('idle');
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => { playerContainer.classList.add('idle'); }, 3000);
+        }
+        window.addEventListener('mousemove', resetIdleTimer);
+        window.addEventListener('click', resetIdleTimer);
+        resetIdleTimer();
+
+        // --- FULLSCREEN (Powiększa całą stronę, żeby działał panel boczny!) ---
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Błąd: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // --- SIDE PANEL & TABS ---
+        function toggleSidePanel() { 
+            sidePanel.classList.toggle('active'); 
+            playerContainer.classList.toggle('panel-open');
+            resetIdleTimer(); 
+        }
+        
+        function switchPanelTab(tabId, btnElement) {
+            document.querySelectorAll('.panel-tab').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.panel-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- SYSTEM GWIAZDEK W RECENZJACH ---
+        function setRating(rating) {
+            const stars = document.getElementById('starRater').querySelectorAll('svg');
+            stars.forEach((star, index) => {
+                if(index < rating) {
+                    star.style.fill = 'var(--lightning-gold)';
+                    star.style.stroke = 'var(--lightning-gold)';
+                } else {
+                    star.style.fill = 'transparent';
+                    star.style.stroke = 'var(--text-muted)';
+                }
+            });
+        }
+
+        // --- WATCH PARTY: WYSYŁANIE ZAPROSZEŃ ---
+        function openWatchPartyTab() {
+            if(!sidePanel.classList.contains('active')) toggleSidePanel();
+            switchPanelTab('tab-party', document.getElementById('tabBtnWatchParty'));
+        }
+
+        function copyWatchLink(btn) {
+            const input = document.getElementById('wpLink');
+            input.select();
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"></polyline></svg> Skopiowano`;
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        }
+
+        function toggleFriendList() { document.getElementById('friendSelector').classList.toggle('active'); }
+
+        function sendInviteToFriend(friendName) {
+            document.getElementById('friendSelector').classList.remove('active');
+            showToast(`✅ Wysłano zaproszenie na czacie do: ${friendName}`, 'success');
+        }
+
+        // --- OPINIE ---
+        function toggleHelpful(btn) {
+            btn.classList.toggle('active');
+            const span = btn.querySelector('span');
+            let count = parseInt(span.innerText.split(' ')[0]);
+            if(btn.classList.contains('active')) span.innerText = (count + 1) + " Pomocne";
+            else span.innerText = (count - 1) + " Pomocne";
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        let toastTimer;
+        function showToast(text, type) {
+            const toast = document.getElementById('mainToast');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastText').innerText = text;
+            
+            toast.className = 'ai-toast';
+            
+            if(type === 'snapshot') {
+                toast.classList.add('snapshot');
+                icon.innerHTML = `<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle>`;
+            } else if (type === 'success') {
+                toast.classList.add('success');
+                icon.innerHTML = `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>`;
+            } else {
+                icon.innerHTML = `<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>`;
+            }
+
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        function toggleDubbing() {
+            const btn = document.getElementById('aiDubBtn');
+            btn.classList.toggle('active');
+            if (btn.classList.contains('active')) showToast("✨ Tłumaczenie głosowe AI włączone (Język: Polski)", 'default');
+            else showToast("🎵 Powrót do oryginalnej ścieżki dźwiękowej", 'default');
+        }
+
+        // --- PIORUN KOMPRESJI AI ---
+        function toggleCompression() {
+            const btn = document.getElementById('compressBtn');
+            const text = document.getElementById('compressText');
+            btn.classList.toggle('active');
+            
+            if (btn.classList.contains('active')) {
+                text.innerText = "1.2x (Brak ciszy)";
+                showToast("⚡ Piorun Kompresji włączony. Oszczędzasz 15% czasu.", 'default');
+            } else {
+                text.innerText = "Kompresja AI";
+                showToast("⚡ Prędkość standardowa.", 'default');
+            }
+        }
+
+        // --- SMART SNAPSHOT DO NOTATNIKA ---
+        function takeSnapshot() {
+            const flash = document.getElementById('cameraFlash');
+            flash.classList.remove('active');
+            void flash.offsetWidth; 
+            flash.classList.add('active');
+            
+            showToast("📸 Zapisano kadr z cytatem w EduNotes!", 'snapshot');
+
+            if(!sidePanel.classList.contains('active')) {
+                toggleSidePanel();
+                switchPanelTab('tab-notes', document.querySelector('.panel-tab'));
+            }
+
+            const notesArea = document.getElementById('notesContentArea');
+            const snapHTML = `
+                <div class="note-snapshot-card">
+                    <img src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=400&auto=format&fit=crop" class="snap-img">
+                    <div class="snap-meta">
+                        <span>Kadr z 45:12</span>
+                        <span style="color: var(--text-muted);">Auto-zapis</span>
+                    </div>
+                    <div class="snap-caption">"Horyzont zdarzeń to granica, zza której nic, nawet światło, nie może uciec..."</div>
+                </div>
+            `;
+            notesArea.insertAdjacentHTML('afterbegin', snapHTML);
+        }
+
+        // --- INTELIGENTNE NOTATKI AI ---
+        let aiNoteTimeout;
+        function toggleAINotes(checkbox) {
+            const indicator = document.getElementById('aiListening');
+            const textarea = document.getElementById('liveNotesArea');
+            
+            if(checkbox.checked) {
+                indicator.style.display = 'flex';
+                aiNoteTimeout = setTimeout(() => {
+                    const textToType = "\n• [AI] Grawitacja w pobliżu czarnej dziury zakrzywia czasoprzestrzeń.\n• [AI] Im bliżej osobliwości, tym czas płynie wolniej względem obserwatora na zewnątrz.";
+                    typeWriter(textarea, textToType, 0);
+                }, 3000);
+            } else {
+                indicator.style.display = 'none';
+                clearTimeout(aiNoteTimeout);
+            }
+        }
+
+        function typeWriter(element, text, i) {
+            if (!document.getElementById('aiNotesToggle').checked) return;
+            
+            if (i < text.length) {
+                element.value += text.charAt(i);
+                element.scrollTop = element.scrollHeight;
+                setTimeout(() => typeWriter(element, text, i + 1), 20);
+            }
+        }
+
+        // --- TIMELINE CHAPTERS TOOLTIP ---
+        const progressBar = document.getElementById('progressBar');
+        const tooltip = document.getElementById('chapTooltip');
+        const tImg = document.getElementById('tooltipImg');
+        const tTitle = document.getElementById('tooltipTitle');
+
+        function moveTooltip(e) {
+            const rect = progressBar.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            if (x < 70) x = 70;
+            if (x > rect.width - 70) x = rect.width - 70;
+            tooltip.style.left = x + 'px';
+
+            const hoveredEl = document.elementFromPoint(e.clientX, e.clientY);
+            let found = false;
+            document.querySelectorAll('.chapter-break').forEach(br => {
+                const brLeft = br.offsetLeft;
+                if(Math.abs(x - brLeft) < 30) {
+                    tTitle.innerText = br.getAttribute('data-title');
+                    tImg.src = br.getAttribute('data-img');
+                    found = true;
+                }
+            });
+
+            if(!found) {
+                tTitle.innerText = "Tajemnice Wszechświata";
+                tImg.src = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=200";
+            }
+        }
+        function hideTooltip() { tooltip.style.opacity = '0'; }
+        progressBar.addEventListener('mouseenter', () => { tooltip.style.opacity = '1'; });
+
+        // --- POMIŃ CZOŁÓWKĘ ---
+        function skipIntro() {
+            const btn = document.getElementById('skipBtn');
+            btn.style.transform = 'scale(0)';
+            setTimeout(() => { btn.style.display = 'none'; }, 300);
+            showToast("Przewinięto do początku odcinka", 'default');
+        }
+
+        // --- PLAY/PAUSE ---
+        document.getElementById('playBtn').addEventListener('click', function() {
+            const isPlaying = this.innerHTML.includes('rect');
+            if (isPlaying) this.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+            else this.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+        });
+    </script>
+</body>
+</html>

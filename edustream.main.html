@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Przeglądaj</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        :root {
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-blue: #0A84FF;
+            --accent-purple: #8b5cf6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.3; animation: float 20s infinite ease-in-out alternate; }
+        .blob-1 { width: 500px; height: 500px; background: #2E0A59; top: -10%; left: -10%; }
+        .blob-2 { width: 600px; height: 600px; background: #002B5E; bottom: -20%; right: -10%; animation-delay: -10s; }
+
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%;
+            padding: 20px 50px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 50;
+            background: linear-gradient(to bottom, rgba(5,5,5,0.95) 0%, rgba(5,5,5,0.8) 50%, rgba(5,5,5,0) 100%);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+        }
+        .nav-left { display: flex; align-items: center; gap: 50px; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        .logo-img { width: 230px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .nav-search {
+            display: flex; align-items: center; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border); border-radius: 30px; padding: 10px 20px; width: 400px;
+            transition: 0.3s;
+        }
+        .nav-search:focus-within { border-color: var(--accent-blue); background: rgba(10, 132, 255, 0.05); }
+        .nav-search input { background: transparent; border: none; color: white; width: 100%; outline: none; margin-left: 10px; font-family: inherit; font-size: 14px;}
+        
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .user-profile-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; padding: 4px 10px 4px 4px; border-radius: 30px; border: 1px solid var(--glass-border); transition: 0.3s;}
+        .user-profile-link:hover { background: rgba(255,255,255,0.05); }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+
+        /* --- GŁÓWNY KONTENER --- */
+        .main-container { max-width: 1600px; margin: 0 auto; padding: 20px 50px 80px 50px; }
+
+        /* --- HEADER WYNIKÓW --- */
+        .results-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 1px solid var(--glass-border); padding-bottom: 20px;}
+        .results-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .results-highlight { color: var(--accent-blue); }
+        
+        .sort-box { display: flex; align-items: center; gap: 10px; background: var(--glass-bg); padding: 8px 15px; border-radius: 12px; border: 1px solid var(--glass-border); cursor: pointer; transition: 0.3s;}
+        .sort-box:hover { background: rgba(255,255,255,0.05); }
+        .sort-box select { background: transparent; border: none; color: white; font-weight: 600; outline: none; cursor: pointer; font-family: inherit;}
+        .sort-box select option { background: var(--bg-dark); }
+
+        /* Filtry pigułkowe (Tagi) */
+        .pill-filters { display: flex; gap: 10px; margin-bottom: 30px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none;}
+        .pill-filters::-webkit-scrollbar { display: none; }
+        .pill-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; padding: 8px 20px; border-radius: 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: 0.3s; white-space: nowrap;}
+        .pill-btn:hover { background: rgba(255,255,255,0.1); }
+        .pill-btn.active { background: white; color: black; font-weight: 700; border-color: white; }
+
+        /* --- GRID FILMÓW --- */
+        .video-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+            gap: 30px 20px; 
+            margin-bottom: 50px;
+        }
+
+        .video-card { display: flex; flex-direction: column; cursor: pointer; text-decoration: none; color: white; transition: 0.3s; animation: fadeUp 0.4s ease forwards; }
+        
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .thumb-container { position: relative; width: 100%; aspect-ratio: 16/9; border-radius: 16px; overflow: hidden; background: #111; border: 1px solid rgba(255,255,255,0.05); }
+        .thumb-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease, opacity 0.4s ease; }
+        
+        .play-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; justify-content: center; align-items: center; opacity: 0; transition: 0.3s; z-index: 2;}
+        .play-icon { width: 50px; height: 50px; background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); border-radius: 50%; display: flex; justify-content: center; align-items: center; border: 1px solid rgba(255,255,255,0.5); transform: scale(0.8); transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+        
+        .duration-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; font-size: 12px; font-weight: 700; padding: 3px 6px; border-radius: 6px; z-index: 3;}
+        .type-badge { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 6px; text-transform: uppercase; z-index: 3;}
+        
+        .video-card:hover .thumb-img { transform: scale(1.05); }
+        .video-card:hover .play-overlay { opacity: 1; }
+        .video-card:hover .play-icon { transform: scale(1); }
+
+        .video-info { display: flex; gap: 15px; margin-top: 15px; }
+        .channel-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;}
+        .video-details { display: flex; flex-direction: column; gap: 4px; }
+        .video-title { font-size: 16px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .channel-name { font-size: 13px; color: var(--text-muted); font-weight: 500; display: flex; align-items: center; gap: 5px; transition: color 0.2s;}
+        .channel-name:hover { color: white; }
+        .channel-name svg { width: 14px; height: 14px; color: var(--text-muted); }
+        .video-meta { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+        /* PUSTY STAN */
+        .empty-state { display: none; text-align: center; padding: 100px 0; grid-column: 1 / -1; }
+        .empty-state.active { display: block; }
+        .empty-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+        .empty-desc { color: var(--text-muted); font-size: 15px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+        </div>
+
+        <div class="nav-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" width="18" height="18">
+                <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" placeholder="Szukaj filmów, bajek, kanałów..." value="Kosmos">
+        </div>
+
+        <div class="nav-right">
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="main-container">
+        
+        <div class="results-header">
+            <h1 class="results-title">Wyniki wyszukiwania dla: <span class="results-highlight">"Kosmos"</span></h1>
+            
+            <div class="sort-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+                <select id="sortSelect">
+                    <option value="default">Najtrafniejsze</option>
+                    <option value="newest">Od najnowszych</option>
+                    <option value="popular">Najpopularniejsze</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="pill-filters" id="pillFilters">
+            <button class="pill-btn active" data-filter="all">Wszystko</button>
+            <button class="pill-btn" data-filter="film">Filmy pełnometrażowe</button>
+            <button class="pill-btn" data-filter="serial">Seriale i Kursy</button>
+            <button class="pill-btn" data-filter="bajka">Bajki edukacyjne</button>
+            <button class="pill-btn" data-filter="eksperyment">Eksperymenty i Ciekawostki</button>
+            <button class="pill-btn" data-filter="podcast">Podcasty</button>
+            <button class="pill-btn" data-filter="edutalks">EduTalks</button>
+        </div>
+
+        <div class="video-grid" id="mainVideoGrid">
+            
+            <a href="cinema.html" class="video-card" data-type="film" data-views="1200000" data-age="14">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Kosmos">
+                    <div class="type-badge" style="background: linear-gradient(135deg, #0A84FF, #8b5cf6);">Film PRO</div>
+                    <div class="duration-badge">1:45:12</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Narodziny Gwiazd - Podróż na kraniec galaktyki | Wersja kinowa</h3>
+                        <div class="channel-name">Dawid Fizyka <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="currentColor" stroke-width="2"></path><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" stroke-width="2"></polyline></svg></div>
+                        <div class="video-meta">1.2 mln wyświetleń • 2 tygodnie temu</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="cinemakid.html" class="video-card" data-type="bajka" data-views="540000" data-age="90">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Ziemia">
+                    <div class="type-badge">Bajka</div>
+                    <div class="duration-badge">22:04</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Dlaczego Ziemia kręci się wokół słońca? Animacja</h3>
+                        <div class="channel-name">Nauka dla Dzieci <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="currentColor" stroke-width="2"></path><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" stroke-width="2"></polyline></svg></div>
+                        <div class="video-meta">540 tys. wyświetleń • 3 miesiące temu</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="cinema.html" class="video-card" data-type="serial" data-views="890000" data-age="365">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Mars">
+                    <div class="type-badge">Serial</div>
+                    <div class="duration-badge">S1:E4 • 45:30</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Misja Mars: Baza na Czerwonej Planecie | Odcinek 4</h3>
+                        <div class="channel-name">SpaceXplore</div>
+                        <div class="video-meta">890 tys. wyświetleń • 1 rok temu</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="podcasty.html" class="video-card" data-type="podcast" data-views="150000" data-age="5">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Podcast 1">
+                    <div class="type-badge" style="background: linear-gradient(135deg, #f59e0b, #ea580c);">Podcast</div>
+                    <div class="duration-badge">1:20:00</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Rozmowy o Wszechświecie - Gość: Prof. Astro</h3>
+                        <div class="channel-name">Głos Nauki <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="currentColor" stroke-width="2"></path><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" stroke-width="2"></polyline></svg></div>
+                        <div class="video-meta">150 tys. odsłuchań • 5 dni temu</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="podcasty.html" class="video-card" data-type="edutalks" data-views="620000" data-age="20">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="EduTalks">
+                    <div class="type-badge" style="background: linear-gradient(135deg, #10b981, #0A84FF);">EduTalks</div>
+                    <div class="duration-badge">24:15</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1544717305-2782549b5136?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">EduTalks: Przyszłość Edukacji i Loty w Kosmos</h3>
+                        <div class="channel-name">EduTalks Official <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="currentColor" stroke-width="2"></path><polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="currentColor" stroke-width="2"></polyline></svg></div>
+                        <div class="video-meta">620 tys. wyświetleń • 3 tygodnie temu</div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="cinemakid.html" class="video-card" data-type="bajka" data-views="2500000" data-age="180">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Księżyc">
+                    <div class="type-badge">Bajka</div>
+                    <div class="duration-badge">18:45</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Fazy Księżyca - Przeżyj niesamowitą przygodę w nocy!</h3>
+                        <div class="channel-name">Bajkowa Nauka</div>
+                        <div class="video-meta">2.5 mln wyświetleń • 6 miesięcy temu</div>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="youtube.html" class="video-card" data-type="eksperyment" data-views="1100000" data-age="2">
+                <div class="thumb-container">
+                    <img src="https://images.unsplash.com/photo-1506443432602-ac2fcd6f54e0?q=80&w=800&auto=format&fit=crop" class="thumb-img" alt="Astronauta">
+                    <div class="type-badge" style="background: #10b981;">Eksperyment</div>
+                    <div class="duration-badge">12:35</div>
+                    <div class="play-overlay">
+                        <div class="play-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="white"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" class="channel-avatar">
+                    <div class="video-details">
+                        <h3 class="video-title">Woda w stanie nieważkości - Zrób to w domu!</h3>
+                        <div class="channel-name">Kosmiczny Vlog</div>
+                        <div class="video-meta">1.1 mln wyświetleń • 2 dni temu</div>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+
+        <div class="empty-state" id="emptyStateMsg">
+            <h2 class="empty-title">Brak wyników</h2>
+            <p class="empty-desc">Nie znaleźliśmy materiałów dla wybranego filtru i sortowania.</p>
+        </div>
+
+    </main>
+
+    <script>
+        // LOGIKA FILTROWANIA I SORTOWANIA
+        const filterBtns = document.querySelectorAll('.pill-btn');
+        const sortSelect = document.getElementById('sortSelect');
+        const grid = document.getElementById('mainVideoGrid');
+        const emptyState = document.getElementById('emptyStateMsg');
+        
+        // Pobieramy wszystkie karty na start
+        const cards = Array.from(grid.querySelectorAll('.video-card'));
+
+        // Przypisujemy każdej karcie oryginalny indeks (dla sortowania "Najtrafniejsze")
+        cards.forEach((card, index) => card.dataset.order = index);
+
+        function updateView() {
+            // 1. Zobacz jaki filtr jest aktywny
+            const activeFilterBtn = document.querySelector('.pill-btn.active');
+            const filterValue = activeFilterBtn ? activeFilterBtn.dataset.filter : 'all';
+            
+            // 2. Zobacz jakie jest sortowanie
+            const sortValue = sortSelect.value;
+
+            // 3. Filtrowanie (Wyznaczamy tylko widoczne karty)
+            let visibleCards = cards.filter(card => {
+                const matches = filterValue === 'all' || card.dataset.type === filterValue;
+                card.style.animation = 'none'; // reset animacji
+                card.style.display = matches ? 'flex' : 'none';
+                return matches;
+            });
+
+            // 4. Sortowanie widocznych kart
+            visibleCards.sort((a, b) => {
+                if (sortValue === 'newest') {
+                    // Sortuj rosnąco po 'age' (im mniej dni, tym nowszy na górze)
+                    return parseInt(a.dataset.age) - parseInt(b.dataset.age);
+                } else if (sortValue === 'popular') {
+                    // Sortuj malejąco po 'views' (im więcej, tym wyżej)
+                    return parseInt(b.dataset.views) - parseInt(a.dataset.views);
+                } else {
+                    // Domyślnie - zachowaj oryginalną kolejność HTML
+                    return parseInt(a.dataset.order) - parseInt(b.dataset.order);
+                }
+            });
+
+            // 5. Aktualizacja struktury DOM (Przenoszenie kart w nowe miejsce)
+            visibleCards.forEach((card, index) => {
+                grid.appendChild(card); 
+                
+                // Restart animacji wjazdu (kaskadowo)
+                setTimeout(() => {
+                    card.style.animation = 'fadeUp 0.4s ease forwards';
+                }, index * 30);
+            });
+
+            // 6. Pokazywanie/ukrywanie komunikatu o braku wyników
+            if (visibleCards.length === 0) {
+                emptyState.classList.add('active');
+            } else {
+                emptyState.classList.remove('active');
+            }
+        }
+
+        // Listener kliknięcia w pigułki filtrowania
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateView();
+            });
+        });
+
+        // Listener zmiany dropdownu sortowania
+        sortSelect.addEventListener('change', () => {
+            updateView();
+        });
+
+        // Proste symulowanie wyszukiwarki zmieniającej tytuł
+        const searchInput = document.querySelector('.nav-search input');
+        searchInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') {
+                const term = e.target.value;
+                document.querySelector('.results-highlight').innerText = `"${term}"`;
+            }
+        });
+
+    </script>
+</body>
+</html>

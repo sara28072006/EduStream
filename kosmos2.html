@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Galaktyka - Floating Minimal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: rgba(255, 255, 255, 0.9);
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        #bg-image {
+            position: fixed;
+            top: -5%;
+            left: -5%;
+            width: 110vw;
+            height: 110vh;
+            background-image: url('kosmos.jpg'); 
+            background-color: #050510; 
+            background-size: cover;
+            background-position: center bottom;
+            z-index: -2;
+            filter: brightness(0.4) contrast(1.3) grayscale(0.2); 
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* --- UI CONTAINER --- */
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; 
+        }
+
+        /* CAŁKOWITY BRAK RAMKI - Tekst lewituje w przestrzeni */
+        .glass-panel {
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            pointer-events: auto;
+            
+            /* Spokojna, bardzo długa animacja */
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 1.2s ease, transform 1.2s ease;
+            position: absolute;
+            visibility: hidden;
+        }
+
+        .glass-panel.active {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        h2 {
+            font-weight: 300;
+            font-size: 28px;
+            margin: 0 0 12px 0;
+            letter-spacing: 0.5px;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8); /* Lekki cień, by tekst był czytelny na gwiazdach */
+        }
+
+        p {
+            font-weight: 300;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.6);
+            margin: 0 0 45px 0;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        /* DELIKATNE PIGUŁKI Z ODPOWIEDZIAMI */
+        .glass-btn {
+            background: rgba(255, 255, 255, 0.03); /* Prawie przezroczyste */
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Minimalna, ledwo widoczna ramka */
+            backdrop-filter: blur(8px); /* Blur tylko na przycisku */
+            -webkit-backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.85);
+            padding: 16px 24px;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            text-align: center;
+        }
+
+        .glass-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            transition: background 0.6s ease;
+        }
+
+        .dot.active {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        #result-text {
+            font-size: 20px;
+            font-weight: 300;
+            color: #ffffff;
+            margin-top: 20px;
+            letter-spacing: 1px;
+            opacity: 0;
+            transition: opacity 1.5s ease 0.8s;
+        }
+        
+        #result-panel.active #result-text {
+            opacity: 1;
+        }
+
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="bg-image"></div>
+
+    <div id="ui-container">
+        
+        <div class="glass-panel active" id="q1-panel">
+            <h2>Jak się dzisiaj czujesz?</h2>
+            <p>Wybierz stan, który z Tobą rezonuje.</p>
+            <div class="options-container">
+                <button class="glass-btn" onclick="nextQuestion(1, 'Spokojnie')">Wyciszony i zrelaksowany</button>
+                <button class="glass-btn" onclick="nextQuestion(1, 'Ciekawie')">Szukam nowej wiedzy</button>
+                <button class="glass-btn" onclick="nextQuestion(1, 'Energetycznie')">Gotowy do działania</button>
+            </div>
+            <div class="progress-dots">
+                <div class="dot active"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel" id="q2-panel">
+            <h2>Gdzie kierujesz swoje myśli?</h2>
+            <p>Wskaż kierunek swojej podróży.</p>
+            <div class="options-container">
+                <button class="glass-btn" onclick="nextQuestion(2, 'Odkrywanie')">Chcę zgłębiać koncepcje</button>
+                <button class="glass-btn" onclick="nextQuestion(2, 'Tworzenie')">Chcę budować coś nowego</button>
+                <button class="glass-btn" onclick="nextQuestion(2, 'Odpoczynek')">Potrzebuję przestrzeni</button>
+            </div>
+            <div class="progress-dots">
+                <div class="dot"></div>
+                <div class="dot active"></div>
+                <div class="dot"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel" id="q3-panel">
+            <h2>Jak chcesz to odkryć?</h2>
+            <p>Określ swój format odbioru.</p>
+            <div class="options-container">
+                <button class="glass-btn" onclick="finishQuiz('Wizualnie')">Przez obrazy i przestrzeń</button>
+                <button class="glass-btn" onclick="finishQuiz('Praktycznie')">Poprzez działanie</button>
+                <button class="glass-btn" onclick="finishQuiz('Analitycznie')">Analizując surowe dane</button>
+            </div>
+            <div class="progress-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot active"></div>
+            </div>
+        </div>
+
+        <div class="glass-panel" id="result-panel">
+            <h2>Kalibracja zakończona</h2>
+            <p>Ustalono współrzędne docelowe.</p>
+            <div id="result-text">Cel: Galaktyka Odkrywców</div>
+            <br><br>
+            <button class="glass-btn" onclick="startJourney()">Rozpocznij Podróż</button>
+        </div>
+
+    </div>
+
+    <script>
+        const userAnswers = [];
+
+        function nextQuestion(currentQNumber, answer) {
+            userAnswers.push(answer);
+            
+            // Gaszenie aktualnego pytania
+            const currentPanel = document.getElementById(`q${currentQNumber}-panel`);
+            currentPanel.classList.remove('active');
+
+            // Czekamy aż pytanie całkowicie znika, zanim pokażemy nowe (daje to efekt spokoju)
+            setTimeout(() => {
+                const nextPanel = document.getElementById(`q${currentQNumber + 1}-panel`);
+                if(nextPanel) nextPanel.classList.add('active');
+            }, 1000); 
+        }
+
+        function finishQuiz(answer) {
+            userAnswers.push(answer);
+            
+            document.getElementById('q3-panel').classList.remove('active');
+
+            let destination = "Nieznany System";
+            if(userAnswers.includes('Energetycznie') || userAnswers.includes('Praktycznie')) {
+                destination = "System Mars";
+            } else if (userAnswers.includes('Spokojnie') || userAnswers.includes('Odpoczynek')) {
+                destination = "Mgławica Neptuna";
+            } else {
+                destination = "Orbita Ziemi";
+            }
+            
+            document.getElementById('result-text').innerText = destination;
+
+            setTimeout(() => {
+                document.getElementById('result-panel').classList.add('active');
+                window.speedBoost = 3; 
+            }, 1000);
+        }
+
+        function startJourney() {
+            document.getElementById('result-panel').classList.remove('active');
+            window.speedBoost = 25; 
+            // Opcjonalne przekierowanie
+            // setTimeout(() => { window.location.href = "planety.html"; }, 2500);
+        }
+    </script>
+
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.0006);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 3000);
+        camera.position.z = 400;
+
+        const renderer = new THREE.WebGLRenderer({ 
+            alpha: true, 
+            antialias: true, 
+            powerPreference: "high-performance" 
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x000000, 0); 
+        document.body.appendChild(renderer.domElement);
+
+        window.speedBoost = 1;
+
+        function createStarTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; 
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            gradient.addColorStop(0.05, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.1)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const starTexture = createStarTexture();
+
+        function createStarField(count, sizeBase, spread, baseColorHex, opacity) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const baseColor = new THREE.Color(baseColorHex);
+            const whiteColor = new THREE.Color(0xffffff);
+
+            for (let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                positions[i3] = (Math.random() - 0.5) * spread; 
+                positions[i3 + 1] = (Math.random() - 0.5) * spread; 
+                positions[i3 + 2] = Math.random() * 2900 - 2500; 
+
+                const c = baseColor.clone().lerp(whiteColor, Math.random() * 0.9);
+                colors[i3] = c.r;
+                colors[i3 + 1] = c.g;
+                colors[i3 + 2] = c.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: sizeBase,
+                map: starTexture,
+                transparent: true,
+                opacity: opacity,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                sizeAttenuation: true
+            });
+
+            const points = new THREE.Points(geometry, material);
+            points.userData = { baseOpacity: opacity }; 
+            return points;
+        }
+
+        const layer1 = createStarField(4000, 1.2, 2500, 0x88aaff, 0.4); 
+        const layer2 = createStarField(1500, 2.8, 1800, 0xddeeff, 0.7);  
+        const layer3 = createStarField(500, 6.0, 1000, 0xffffff, 0.9);   
+
+        scene.add(layer1);
+        scene.add(layer2);
+        scene.add(layer3);
+
+        const starLayers = [layer1, layer2, layer3];
+
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX); 
+            mouseY = (event.clientY - windowHalfY);
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        const clock = new THREE.Clock();
+        const bgImageElement = document.getElementById('bg-image');
+        
+        let currentBgX = 0;
+        let currentBgY = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime(); 
+
+            const floatX = Math.sin(time * 0.3) * 12; 
+            const floatY = Math.cos(time * 0.2) * 8;  
+
+            targetX = (mouseX * 0.01) + floatX; 
+            targetY = (mouseY * 0.01) + floatY;
+            camera.position.x += (targetX - camera.position.x) * 0.02;
+            camera.position.y += (-targetY - camera.position.y) * 0.02;
+            camera.lookAt(scene.position);
+
+            if(bgImageElement) {
+                const bgTargetX = (mouseX * 0.012) + (floatX * 1.2); 
+                const bgTargetY = (mouseY * 0.012) + (floatY * 1.2);
+                currentBgX += (bgTargetX - currentBgX) * 0.05;
+                currentBgY += (bgTargetY - currentBgY) * 0.05;
+                bgImageElement.style.transform = `translate(${-currentBgX}px, ${-currentBgY}px)`;
+            }
+
+            const speedMultiplier = 45 * window.speedBoost; 
+            
+            starLayers.forEach((layer, index) => {
+                const positions = layer.geometry.attributes.position.array;
+                const speed = (index + 1) * speedMultiplier * delta; 
+                
+                for(let i = 2; i < positions.length; i += 3) {
+                    positions[i] += speed; 
+                    
+                    if(positions[i] > 400) {
+                        positions[i] = -2500;
+                        positions[i - 1] = (Math.random() - 0.5) * 2000; 
+                        positions[i - 2] = (Math.random() - 0.5) * 2000; 
+                    }
+                }
+                layer.geometry.attributes.position.needsUpdate = true;
+                layer.rotation.z += delta * 0.005 * (index + 1) * window.speedBoost; 
+
+                const base = layer.userData.baseOpacity;
+                const breathPhase = time * 0.8 + index; 
+                layer.material.opacity = base + Math.sin(breathPhase) * 0.15;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

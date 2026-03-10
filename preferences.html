@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Preferences</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --bg-base: #000000;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-color: #0A84FF;
+            --accent-gradient: linear-gradient(135deg, #0A84FF, #5E5CE6);
+            --toggle-on: #34C759; 
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob {
+            position: absolute; border-radius: 50%; filter: blur(100px);
+            z-index: 0; opacity: 0.4; animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { width: 400px; height: 400px; background: #2E0A59; top: -10%; left: -5%; }
+        .blob-2 { width: 500px; height: 500px; background: #002B5E; bottom: -20%; right: -10%; animation-delay: -10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        /* --- MAIN APP LAYOUT --- */
+        .app-container {
+            width: 90%; max-width: 1200px; height: 85vh;
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            display: flex; z-index: 10; box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 300px; background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; padding: 30px 20px;
+        }
+
+        .user-profile {
+            display: flex; align-items: center; gap: 15px;
+            padding-bottom: 30px; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px;
+        }
+        .user-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .user-info h3 { font-size: 16px; font-weight: 600; }
+        .user-info p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+        .nav-menu { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+            color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .nav-item svg { width: 18px; height: 18px; transition: stroke 0.3s; }
+        .nav-item:hover { background: var(--glass-hover); color: var(--text-main); }
+        .nav-item.active { background: var(--glass-bg); color: var(--text-main); box-shadow: inset 0 0 0 1px var(--glass-border); }
+        .nav-item.active svg { stroke: var(--text-main); }
+
+        /* GUZIKI POWROTU NA DOLE */
+        .back-buttons-container { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .back-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
+            color: white; text-decoration: none; font-size: 13px; font-weight: 600;
+            transition: 0.3s; border: 1px solid transparent;
+        }
+        .back-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255,255,255,0.1); }
+        
+        /* Wyróżniony guzik "Back to Edunity" */
+        .back-btn.highlight {
+            background: var(--text-main);
+            color: var(--bg-base);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        .back-btn.highlight:hover {
+            transform: translateY(-2px);
+            background: #f0f0f0;
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+        }
+        .back-btn svg { width: 16px; height: 16px; }
+
+        /* --- MAIN CONTENT AREA --- */
+        .content-area { flex-grow: 1; padding: 40px 60px; overflow-y: auto; position: relative; }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: transparent; }
+        .content-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .page-header { margin-bottom: 40px; }
+        .page-title { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+        .page-subtitle { font-size: 15px; color: var(--text-muted); margin-top: 8px; }
+
+        /* --- SETTINGS GROUPS --- */
+        .settings-group { margin-bottom: 35px; }
+        .group-title {
+            font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 600; margin-bottom: 12px; margin-left: 15px;
+        }
+        .settings-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--glass-border); transition: background 0.3s; }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-row:hover { background: rgba(255,255,255,0.02); }
+        .setting-info { display: flex; flex-direction: column; gap: 4px; }
+        .setting-name { font-size: 15px; font-weight: 500; }
+        .setting-desc { font-size: 13px; color: var(--text-muted); max-width: 450px; line-height: 1.4; }
+
+        /* --- TEST PREFERENCJI - PRZYCISK --- */
+        .take-test-btn {
+            width: 100%; padding: 18px; margin-bottom: 25px; border-radius: 14px;
+            background: var(--accent-gradient); color: white; border: none; font-size: 15px;
+            font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px;
+            cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
+        }
+        .take-test-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.5); }
+
+        /* --- TEST PREFERENCJI - MODAL --- */
+        .test-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(25px);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: 0.4s ease;
+        }
+        .test-modal-overlay.active { opacity: 1; pointer-events: all; }
+        
+        .test-modal-content {
+            background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 24px; padding: 40px; width: 100%; max-width: 650px;
+            position: relative; transform: translateY(30px) scale(0.95);
+            transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 40px 80px rgba(0,0,0,0.8);
+        }
+        .test-modal-overlay.active .test-modal-content { transform: translateY(0) scale(1); }
+
+        .close-test {
+            position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.1); border: none;
+            color: white; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; transition: 0.3s;
+        }
+        .close-test:hover { background: rgba(255,255,255,0.2); }
+
+        /* Wnętrze Testu */
+        .test-step { display: none; text-align: center; }
+        .test-step.active { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+
+        .test-step h2 { font-size: 24px; margin-bottom: 10px; }
+        .test-step p { color: var(--text-muted); margin-bottom: 30px; font-size: 14px; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+        .option-card {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px; border-radius: 16px; cursor: pointer; transition: 0.3s;
+            font-size: 15px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .option-card:hover { background: rgba(255,255,255,0.1); }
+        .option-card.selected { background: rgba(10, 132, 255, 0.15); border-color: var(--accent-color); box-shadow: 0 0 0 1px var(--accent-color); }
+
+        .custom-input {
+            width: 100%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 18px 20px; border-radius: 14px; font-size: 16px; font-family: inherit;
+            margin-bottom: 30px; outline: none; transition: 0.3s;
+        }
+        .custom-input:focus { border-color: var(--accent-color); }
+
+        .test-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
+        .step-indicator { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+        
+        .next-btn {
+            background: var(--text-main); color: var(--bg-base); border: none;
+            padding: 12px 35px; border-radius: 30px; font-weight: 600; font-size: 15px;
+            cursor: pointer; transition: 0.3s;
+        }
+        .next-btn:hover { transform: scale(1.05); }
+
+        /* --- INPUTS & TOGGLES --- */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.15); transition: .4s; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background-color: white; transition: .4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .slider { background-color: var(--toggle-on); border-color: var(--toggle-on); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .select-input { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 10px 15px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.3s; width: 220px; }
+        .select-input:focus { border-color: var(--accent-color); }
+        
+        .action-link { color: var(--accent-color); text-decoration: none; font-size: 14px; font-weight: 500; }
+        .action-link:hover { text-decoration: underline; }
+
+        /* --- HASHTAGI --- */
+        .hashtags-wrapper { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+        .hashtag { background: rgba(10, 132, 255, 0.15); border: 1px solid rgba(10, 132, 255, 0.3); color: #fff; padding: 6px 12px; border-radius: 20px; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+        .hashtag:hover { border-color: rgba(10, 132, 255, 0.6); }
+        .remove-tag { background: none; border: none; color: rgba(255,255,255,0.6); cursor: pointer; font-size: 16px; transition: color 0.2s; }
+        .remove-tag:hover { color: #fff; }
+        .hashtag-input { background: transparent; border: none; color: white; font-size: 14px; outline: none; min-width: 180px; padding: 6px 4px; flex-grow: 1; }
+        .hashtag-input::placeholder { color: rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="user-profile">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <div class="user-info">
+                    <h3>Michał D.</h3>
+                    <p id="sidebar-class-display">Klasa 8 • EduStream</p>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a class="nav-item active" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Preferences
+                </a>
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    Learning Mode
+                </a>
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Watch History
+                </a>
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Accessibility
+                </a>
+            </nav>
+
+            <div class="back-buttons-container">
+                <a href="#" class="back-btn">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    Back to EduStream
+                </a>
+                <a href="#" class="back-btn highlight">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Back to Edunity
+                </a>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Preferences</h1>
+                <p class="page-subtitle">Zarządzaj swoim profilem edukacyjnym i sposobem dobierania treści.</p>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Twój Profil Akademicki</h4>
+                <div class="settings-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Obecna Klasa / Poziom</span>
+                            <span class="setting-desc">Na podstawie tej opcji dobieramy trudność materiałów edukacyjnych.</span>
+                        </div>
+                        <select class="select-input" id="classSelect" onchange="updateSidebarClass()">
+                            <option>Klasa 4</option>
+                            <option>Klasa 5</option>
+                            <option>Klasa 6</option>
+                            <option>Klasa 7</option>
+                            <option selected>Klasa 8</option>
+                            <option>Liceum / Technikum</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Personalizacja Treści</h4>
+                <div class="settings-card">
+                    <div class="setting-row" style="flex-direction: column; align-items: flex-start;">
+                        
+                        <div class="setting-info" style="width: 100%; margin-bottom: 20px;">
+                            <span class="setting-name">Odkryj swoje zainteresowania</span>
+                            <span class="setting-desc">Wypełnij dokładny test (10 pytań), a my dopasujemy materiały idealnie pod Twój gust, cele i sposób nauki.</span>
+                        </div>
+
+                        <button class="take-test-btn" onclick="openTestModal()">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                            Rozwiąż Szczegółowy Test Preferencji
+                        </button>
+
+                        <hr style="width: 100%; border: none; height: 1px; background: var(--glass-border); margin-bottom: 20px;">
+
+                        <div class="setting-info" style="width: 100%; margin-bottom: 10px;">
+                            <span class="setting-name">Ręczna baza Hashtagów</span>
+                            <span class="setting-desc">Dodaj własne tagi. Wpisz słowo i wciśnij <strong>Enter</strong>. Na tej podstawie sortujemy Twój Feed.</span>
+                        </div>
+                        
+                        <div class="hashtags-wrapper" id="hashtagsContainer">
+                            <span class="hashtag">#kosmos <button class="remove-tag" onclick="removeTag(this)">&times;</button></span>
+                            <span class="hashtag">#historia <button class="remove-tag" onclick="removeTag(this)">&times;</button></span>
+                            <span class="hashtag">#programowanie <button class="remove-tag" onclick="removeTag(this)">&times;</button></span>
+                            
+                            <input type="text" class="hashtag-input" id="hashtagInput" placeholder="np. biologia...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Odtwarzanie i Konto</h4>
+                <div class="settings-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Autoplay kolejnego odcinka</span>
+                        </div>
+                        <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Język aplikacji</span>
+                        </div>
+                        <select class="select-input">
+                            <option>English</option>
+                            <option selected>Polski</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="test-modal-overlay" id="testModalOverlay">
+        <div class="test-modal-content">
+            <button class="close-test" onclick="closeTestModal()">✕</button>
+            
+            <div id="dynamic-test-container">
+                </div>
+
+            <div class="test-footer">
+                <div class="step-indicator" id="stepIndicator">Pytanie 1 z 10</div>
+                <button class="next-btn" id="nextQuestionBtn" onclick="goToNextStep()">Dalej</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- ZAKŁADKI W SIDEBARZE ---
+        function switchTab(clickedItem) {
+            const items = document.querySelectorAll('.nav-item');
+            items.forEach(item => item.classList.remove('active'));
+            clickedItem.classList.add('active');
+            const pageTitle = document.querySelector('.page-title');
+            pageTitle.textContent = clickedItem.textContent.trim();
+        }
+
+        function updateSidebarClass() {
+            const selectElement = document.getElementById('classSelect');
+            const sidebarDisplay = document.getElementById('sidebar-class-display');
+            sidebarDisplay.textContent = selectElement.value + ' • EduStream';
+        }
+
+        // --- OBSŁUGA HASHTAGÓW ---
+        const hashtagInput = document.getElementById('hashtagInput');
+        const hashtagsContainer = document.getElementById('hashtagsContainer');
+
+        hashtagInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                let val = this.value.trim();
+                if (val !== "") {
+                    if (!val.startsWith('#')) val = '#' + val;
+                    const newTag = document.createElement('span');
+                    newTag.className = 'hashtag';
+                    newTag.innerHTML = `${val} <button class="remove-tag" onclick="removeTag(this)">&times;</button>`;
+                    hashtagsContainer.insertBefore(newTag, hashtagInput);
+                    this.value = '';
+                }
+            }
+        });
+
+        function removeTag(buttonElement) {
+            const tagElement = buttonElement.parentElement;
+            hashtagsContainer.removeChild(tagElement);
+        }
+
+        // --- BAZA PYTAŃ DO TESTU (10 pytań, wyboru i otwartych) ---
+        const testQuestions = [
+            { type: 'choice', title: 'Jak wolisz przyswajać wiedzę?', desc: 'Wybierz format, który najmniej Cię nudzi.', options: ['🎥 Krótkie Wideo (TikTok style)', '📺 Dłuższe Dokumenty', '🎮 Interaktywne (Quizy)', '🎧 Podcasty i Audio'] },
+            { type: 'choice', title: 'Jaki jest Twój główny cel nauki?', desc: 'Na czym najbardziej Ci zależy?', options: ['📈 Poprawa ocen w szkole', '🏆 Nauka nowych skilli', '🌍 Zrozumienie świata', '🎨 Czysta rozrywka edukacyjna'] },
+            { type: 'choice', title: 'Ile czasu dziennie masz na naukę?', desc: 'Dopasujemy długość materiałów.', options: ['🕒 ~15 minut (w biegu)', '⏳ ~30 minut', '⏱️ 1 godzina', '🕰️ Więcej niż godzina'] },
+            { type: 'text', title: 'Jaki jest Twój ulubiony przedmiot w szkole?', desc: 'Możesz wpisać własną odpowiedź.', placeholder: 'Np. biologia, matematyka, historia...' },
+            { type: 'choice', title: 'Kiedy Twój mózg pracuje najlepiej?', desc: 'Kiedy najchętniej oglądasz EduStream?', options: ['🌅 Rano (przed szkołą)', '☀️ W południe', '🌇 Wieczorem', '🌙 W nocy'] },
+            { type: 'choice', title: 'Jakie projekty lubisz najbardziej?', desc: 'Pomoże nam to w doborze zadań.', options: ['👤 Indywidualne analizy', '👥 Praca w małej grupie', '🛠️ Budowanie prototypów', '📚 Teoretyczne eseje'] },
+            { type: 'text', title: 'Co sprawia Ci największą trudność w nauce?', desc: 'Napisz własnymi słowami.', placeholder: 'Np. zapamiętywanie dat, wzory z fizyki...' },
+            { type: 'choice', title: 'Teoria czy Praktyka?', desc: 'W jakim kierunku mamy przechylić Twój feed?', options: ['📚 100% Teoria', '🛠️ Głównie praktyka', '⚖️ Złoty środek (50/50)', '🎲 Zależy od tematu'] },
+            { type: 'text', title: 'Jakie jest Twoje marzenie zawodowe?', desc: 'Kim chcesz zostać w przyszłości?', placeholder: 'Wpisz wymarzony zawód lub ścieżkę...' },
+            { type: 'text', title: 'Czego brakuje Ci w obecnej szkole?', desc: 'Czego chciałbyś się uczyć, a nie masz gdzie?', placeholder: 'Np. finanse, programowanie AI, psychologia...' }
+        ];
+
+        let currentTestStep = 0;
+        const modalOverlay = document.getElementById('testModalOverlay');
+        const testContainer = document.getElementById('dynamic-test-container');
+        const stepIndicator = document.getElementById('stepIndicator');
+        const nextBtn = document.getElementById('nextQuestionBtn');
+
+        function openTestModal() {
+            modalOverlay.classList.add('active');
+            currentTestStep = 0;
+            renderStep();
+        }
+
+        function closeTestModal() {
+            modalOverlay.classList.remove('active');
+        }
+
+        function renderStep() {
+            testContainer.innerHTML = ''; // Wyczyść kontener
+
+            if(currentTestStep >= testQuestions.length) {
+                // EKRAN KOŃCOWY
+                stepIndicator.style.display = 'none';
+                testContainer.innerHTML = `
+                    <div class="test-step active">
+                        <h2>Świetnie! 🚀</h2>
+                        <p>Zapisaliśmy Twoje samodzielne odpowiedzi i preferencje. Twój profil został zaktualizowany!</p>
+                        <div style="margin: 30px 0; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                            <span class="hashtag" style="border-color: var(--toggle-on); background: rgba(52, 199, 89, 0.15);">#personalizacja_100%</span>
+                        </div>
+                    </div>
+                `;
+                nextBtn.innerText = "Zakończ i Zapisz";
+                nextBtn.onclick = finishTest;
+                return;
+            }
+
+            // Renderowanie normalnego kroku
+            stepIndicator.style.display = 'block';
+            stepIndicator.innerText = `Pytanie ${currentTestStep + 1} z ${testQuestions.length}`;
+            nextBtn.innerText = "Dalej";
+            nextBtn.onclick = goToNextStep;
+
+            const q = testQuestions[currentTestStep];
+            
+            let html = `
+                <div class="test-step active">
+                    <h2>${q.title}</h2>
+                    <p>${q.desc}</p>
+            `;
+
+            if(q.type === 'choice') {
+                html += `<div class="options-grid">`;
+                q.options.forEach(opt => {
+                    html += `<div class="option-card" onclick="selectOption(this)">${opt}</div>`;
+                });
+                html += `</div>`;
+            } else if(q.type === 'text') {
+                html += `
+                    <input type="text" class="custom-input" id="customInputAnswer" placeholder="${q.placeholder}" autocomplete="off">
+                `;
+                // Jeśli wpisze tekst, zatwierdź enterem
+                setTimeout(() => {
+                    const inputField = document.getElementById('customInputAnswer');
+                    if(inputField) {
+                        inputField.focus();
+                        inputField.addEventListener('keypress', function(e) {
+                            if(e.key === 'Enter' && this.value.trim() !== '') {
+                                goToNextStep();
+                            }
+                        });
+                    }
+                }, 100);
+            }
+            
+            html += `</div>`;
+            testContainer.innerHTML = html;
+        }
+
+        function selectOption(card) {
+            const siblings = card.parentElement.querySelectorAll('.option-card');
+            siblings.forEach(sib => sib.classList.remove('selected'));
+            card.classList.add('selected');
+        }
+
+        function goToNextStep() {
+            // Animacja wyjścia
+            const currentStepEl = testContainer.querySelector('.test-step');
+            if(currentStepEl) {
+                currentStepEl.style.animation = 'none';
+                currentStepEl.style.opacity = '0';
+                currentStepEl.style.transform = 'translateX(-20px)';
+            }
+            
+            setTimeout(() => {
+                currentTestStep++;
+                renderStep();
+            }, 200);
+        }
+
+        function finishTest() {
+            // Symulujemy dodanie nowych tagów na podstawie tekstu/odpowiedzi
+            const newTag1 = document.createElement('span');
+            newTag1.className = 'hashtag';
+            newTag1.innerHTML = `#super_dopasowanie <button class="remove-tag" onclick="removeTag(this)">&times;</button>`;
+            hashtagsContainer.insertBefore(newTag1, hashtagInput);
+            
+            closeTestModal();
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Moja Lista</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-color: #0A84FF;
+            --heart-color: #ef4444; 
+            --schedule-color: #5E5CE6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob {
+            position: fixed; border-radius: 50%; filter: blur(120px);
+            z-index: -1; opacity: 0.35; animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { width: 500px; height: 500px; background: #2E0A59; top: -10%; left: -10%; }
+        .blob-2 { width: 600px; height: 600px; background: #002B5E; bottom: -20%; right: -10%; animation-delay: -10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        /* Animacja dla czerwonej kropki LIVE */
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%;
+            padding: 35px 50px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 50;
+            background: linear-gradient(to bottom, rgba(5,5,5,0.9) 0%, rgba(5,5,5,0) 100%);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .nav-left { display: flex; align-items: center; gap: 50px; }
+        
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .nav-links { display: flex; align-items: center; gap: 30px; }
+        .nav-link {
+            position: relative; color: var(--text-muted); text-decoration: none; 
+            font-size: 15px; font-weight: 500; transition: color 0.3s;
+        }
+        .nav-link:hover { color: var(--text-main); }
+        .nav-link.active { color: var(--text-main); font-weight: 600; }
+        .nav-link.active::after {
+            content: ''; position: absolute; bottom: -6px; left: 0;
+            width: 100%; height: 2px; background-color: var(--text-main); border-radius: 2px;
+        }
+
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .user-profile-link {
+            display: flex; align-items: center; gap: 12px; text-decoration: none; color: white;
+            padding: 4px 10px 4px 4px; border-radius: 30px; transition: 0.3s; background: var(--glass-bg); border: 1px solid var(--glass-border);
+        }
+        .user-profile-link:hover { background: var(--glass-hover); }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+
+        /* --- MAIN CONTENT & TOGGLE --- */
+        .watchlist-container { max-width: 1400px; margin: 0 auto; padding: 40px 50px; }
+
+        /* Przełącznik Ulubione / Zaplanowane */
+        .view-toggle {
+            display: flex; background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 30px; padding: 6px; margin-bottom: 40px; width: fit-content;
+        }
+        .toggle-btn {
+            padding: 12px 30px; border-radius: 24px; border: none; background: transparent;
+            color: var(--text-muted); font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toggle-btn:hover { color: white; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.1); color: white; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .toggle-btn svg { width: 16px; height: 16px; }
+
+        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+        .page-title { font-size: 36px; font-weight: 800; letter-spacing: -1px; margin-bottom: 8px;}
+        .page-subtitle { color: var(--text-muted); font-size: 15px; }
+
+        .filters { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-muted);
+            padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.3s;
+        }
+        .filter-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .filter-btn.active { background: white; color: black; font-weight: 600; border-color: white; }
+
+        /* --- GRID FILMÓW --- */
+        .grid-section { display: none; animation: fadeIn 0.4s ease; }
+        .grid-section.active { display: block; }
+
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
+
+        .video-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 16px; overflow: hidden; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative; display: flex; flex-direction: column; cursor: pointer;
+        }
+        .video-card:hover {
+            transform: translateY(-6px); border-color: rgba(255,255,255,0.2); box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .thumbnail-container { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #111; }
+        .thumbnail-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0.8; }
+        .video-card:hover .thumbnail-img { transform: scale(1.08); opacity: 0.5; }
+
+        .play-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8);
+            width: 50px; height: 50px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.5); border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); color: white;
+        }
+        .video-card:hover .play-overlay { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .card-badges { position: absolute; top: 12px; left: 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start;}
+        .badge {
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); padding: 4px 8px; border-radius: 6px;
+            font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 4px;
+        }
+        .badge.schedule { background: rgba(94, 92, 230, 0.8); border-color: var(--schedule-color); color: white; }
+
+        /* Przycisk Usuwania */
+        .remove-btn {
+            position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1); width: 32px; height: 32px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; z-index: 10;
+        }
+        .remove-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        
+        .remove-btn.heart svg { fill: var(--heart-color); stroke: var(--heart-color); width: 16px; height: 16px; transition: 0.3s; }
+        .remove-btn.heart:hover svg { fill: transparent; stroke: var(--text-muted); }
+
+        .remove-btn.calendar svg { stroke: white; width: 16px; height: 16px; transition: 0.3s; }
+        .remove-btn.calendar:hover svg { stroke: var(--heart-color); }
+
+        .card-info { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .card-title { font-size: 16px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .card-meta { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+        .meta-dot { font-size: 10px; color: rgba(255,255,255,0.2); }
+
+        /* --- KANAŁY (GRID) --- */
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .channel-card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px;
+            padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: 0.3s; cursor: pointer; text-decoration: none; color: white;
+        }
+        .channel-card:hover {
+            transform: translateY(-5px); border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05); box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        .channel-avatar {
+            width: 80px; height: 80px; border-radius: 50%; object-fit: cover;
+            margin-bottom: 15px; border: 3px solid transparent; transition: 0.3s;
+        }
+        .channel-card:hover .channel-avatar { border-color: var(--accent-color); }
+
+        .channel-name { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .channel-subs { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; }
+
+        .subscribe-btn {
+            background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 20px;
+            border-radius: 15px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.3s;
+            width: 100%; font-family: inherit;
+        }
+        .subscribe-btn:hover { background: var(--text-main); color: var(--bg-dark); }
+        .subscribe-btn.subscribed { background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); }
+
+
+        /* --- EMPTY STATE --- */
+        .empty-state {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 80px 0;
+        }
+        .empty-state.active { display: flex; animation: fadeIn 0.5s ease; }
+        .empty-icon {
+            width: 80px; height: 80px; background: var(--glass-bg); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; border: 1px solid var(--glass-border);
+            margin-bottom: 20px; color: var(--text-muted);
+        }
+        .empty-icon svg { width: 40px; height: 40px; stroke-width: 1.5; }
+        .empty-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+        .empty-desc { color: var(--text-muted); max-width: 400px; line-height: 1.6; margin-bottom: 30px; font-size: 15px;}
+        .discover-btn {
+            background: var(--text-main); color: var(--bg-dark); text-decoration: none;
+            padding: 12px 30px; border-radius: 30px; font-weight: 600; font-size: 14px; transition: 0.3s;
+        }
+        .discover-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255,255,255,0.2); background: #f0f0f0; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .removing { transform: scale(0.9); opacity: 0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Strona Główna</a>
+                <a href="kategorie.html" class="nav-link">Kategorie</a>
+                <a href="watchlist.html" class="nav-link active">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link">Live <span style="color: var(--heart-color); margin-left: 4px; font-size: 18px; animation: pulse 2s infinite;">•</span></a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="watchlist-container">
+        
+        <div class="view-toggle">
+            <button class="toggle-btn active" onclick="switchView('favorites', this)">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                Ulubione
+            </button>
+            
+            <button class="toggle-btn" onclick="switchView('following', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                Obserwowane
+            </button>
+
+            <button class="toggle-btn" onclick="switchView('scheduled', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                Zaplanowane
+            </button>
+        </div>
+
+        <div class="page-header" id="header-section">
+            <div>
+                <h1 class="page-title" id="dynamic-title">Twoje Ulubione</h1>
+                <p class="page-subtitle" id="dynamic-subtitle">Zbiór materiałów, do których chętnie wracasz.</p>
+            </div>
+            <div class="filters" id="category-filters">
+                <button class="filter-btn active" data-filter="all">Wszystkie</button>
+                <button class="filter-btn" data-filter="film">Filmy</button>
+                <button class="filter-btn" data-filter="serial">Seriale</button>
+                <button class="filter-btn" data-filter="filmik">Filmiki</button>
+                <button class="filter-btn" data-filter="bajka">Bajki</button>
+                <button class="filter-btn" data-filter="podcast">Podcasty</button>
+            </div>
+        </div>
+
+        <div class="grid-section active" id="favorites-section">
+            <div class="video-grid" id="favorites-grid">
+                
+                <div class="video-card" data-category="bajka" onclick="window.location.href='cinemakid.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Kosmos">
+                        <div class="card-badges">
+                            <span class="badge">Bajka</span>
+                            <span class="badge" style="color: #4ade80; border-color: rgba(74, 222, 128, 0.3);">Dla dzieci</span>
+                        </div>
+                        <button class="remove-btn heart" title="Usuń z ulubionych" onclick="removeFromList(this, 'favorites-grid', event)">
+                            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Kosmiczna Akademia. Odcinek 1: Narodziny Gwiazd</h3>
+                        <div class="card-meta"><span>Fizyka</span><span class="meta-dot">&bull;</span><span>Dodano wczoraj</span></div>
+                    </div>
+                </div>
+
+                <div class="video-card" data-category="serial" onclick="window.location.href='cinema.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Programowanie">
+                        <div class="card-badges"><span class="badge">Serial</span></div>
+                        <button class="remove-btn heart" title="Usuń z ulubionych" onclick="removeFromList(this, 'favorites-grid', event)">
+                            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Mistrzowie Kodu - Zrozumieć algorytmy</h3>
+                        <div class="card-meta"><span>Informatyka</span><span class="meta-dot">&bull;</span><span>Dodano 3 dni temu</span></div>
+                    </div>
+                </div>
+
+                <div class="video-card" data-category="film" onclick="window.location.href='cinema.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Ziemia">
+                        <div class="card-badges"><span class="badge">Film dokumentalny</span></div>
+                        <button class="remove-btn heart" title="Usuń z ulubionych" onclick="removeFromList(this, 'favorites-grid', event)">
+                            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Potęga Oceanów - Tajemnice Głębin</h3>
+                        <div class="card-meta"><span>Przyroda</span><span class="meta-dot">&bull;</span><span>1h 45m</span></div>
+                    </div>
+                </div>
+
+                <div class="video-card" data-category="filmik" onclick="window.location.href='youtube.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Bakterie">
+                        <div class="card-badges"><span class="badge">Filmik (EduShort)</span></div>
+                        <button class="remove-btn heart" title="Usuń z ulubionych" onclick="removeFromList(this, 'favorites-grid', event)">
+                            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Dlaczego mydło niszczy wirusy? Szybki eksperyment!</h3>
+                        <div class="card-meta"><span>Chemia</span><span class="meta-dot">&bull;</span><span>03:15 min</span></div>
+                    </div>
+                </div>
+
+                <div class="video-card" data-category="podcast" onclick="window.location.href='podcasty.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Podcast">
+                        <div class="card-badges">
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.8); border-color: #f59e0b;">Podcast</span>
+                        </div>
+                        <button class="remove-btn heart" title="Usuń z ulubionych" onclick="removeFromList(this, 'favorites-grid', event)">
+                            <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Rozmowy o Wszechświecie - Gość: Prof. Astro</h3>
+                        <div class="card-meta"><span>AstroFizyka</span><span class="meta-dot">&bull;</span><span>Dodano dzisiaj</span></div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="empty-state" id="favorites-empty">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path><line x1="4" y1="4" x2="20" y2="20" stroke="rgba(255,255,255,0.3)"></line></svg>
+                </div>
+                <h2 class="empty-title">Brak materiałów w tej kategorii</h2>
+                <p class="empty-desc">Twoja lista w tej zakładce jest pusta. Odkryj EduStream i kliknij serduszko, by zapisywać tu filmy.</p>
+                <a href="index.html" class="discover-btn">Odkrywaj EduStream</a>
+            </div>
+        </div>
+
+        <div class="grid-section" id="following-section">
+            <div class="channel-grid">
+                
+                <a href="channel.html" class="channel-card">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                    <h3 class="channel-name">HistoriaBezMitu</h3>
+                    <p class="channel-subs">340K Subskrybentów</p>
+                    <button class="subscribe-btn subscribed" onclick="toggleSub(this, event)">Subskrybujesz</button>
+                </a>
+
+                <a href="channel.html" class="channel-card">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                    <h3 class="channel-name">Fundacja EkoŚwiat</h3>
+                    <p class="channel-subs">145K Subskrybentów</p>
+                    <button class="subscribe-btn subscribed" onclick="toggleSub(this, event)">Subskrybujesz</button>
+                </a>
+                
+                <a href="channel.html" class="channel-card">
+                    <img src="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                    <h3 class="channel-name">EduChemia</h3>
+                    <p class="channel-subs">92K Subskrybentów</p>
+                    <button class="subscribe-btn subscribed" onclick="toggleSub(this, event)">Subskrybujesz</button>
+                </a>
+
+            </div>
+        </div>
+
+        <div class="grid-section" id="scheduled-section">
+            <div class="video-grid" id="scheduled-grid">
+                
+                <div class="video-card" data-category="filmik" onclick="window.location.href='youtube.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Chemia">
+                        <div class="card-badges">
+                            <span class="badge schedule">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                Jutro, 17:00
+                            </span>
+                            <span class="badge">Filmik</span>
+                        </div>
+                        <button class="remove-btn calendar" title="Anuluj zaplanowane" onclick="removeFromList(this, 'scheduled-grid', event)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Chemia na co dzień: Dlaczego chleb rośnie?</h3>
+                        <div class="card-meta"><span>Chemia</span><span class="meta-dot">&bull;</span><span>Czas trwania: 15 min</span></div>
+                    </div>
+                </div>
+
+                <div class="video-card" data-category="film" onclick="window.location.href='cinema.html'">
+                    <div class="thumbnail-container">
+                        <img src="https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=800&auto=format&fit=crop" class="thumbnail-img" alt="Ziemia">
+                        <div class="card-badges">
+                            <span class="badge schedule" style="background: rgba(255, 159, 10, 0.8); border-color: #FF9F0A;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                Niedziela, 12:30
+                            </span>
+                            <span class="badge">Film dokumentalny</span>
+                        </div>
+                        <button class="remove-btn calendar" title="Anuluj zaplanowane" onclick="removeFromList(this, 'scheduled-grid', event)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                        <div class="play-overlay"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></div>
+                    </div>
+                    <div class="card-info">
+                        <h3 class="card-title">Sekrety Ziemi: Ukryte oceany i jaskinie</h3>
+                        <div class="card-meta"><span>Geografia</span><span class="meta-dot">&bull;</span><span>Czas trwania: 45 min</span></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="empty-state" id="scheduled-empty">
+                <div class="empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><line x1="4" y1="4" x2="20" y2="20" stroke="rgba(255,255,255,0.3)"></line></svg>
+                </div>
+                <h2 class="empty-title">Brak materiałów w tej kategorii</h2>
+                <p class="empty-desc">Nie masz ustawionych żadnych przypomnień na tego typu treści. Zbuduj swój nawyk planując oglądanie na konkretny dzień i godzinę.</p>
+                <a href="index.html" class="discover-btn">Znajdź materiał do zaplanowania</a>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- LOGIKA FILTROWANIA KATEGORII ---
+        const filters = document.querySelectorAll('.filter-btn');
+        
+        filters.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 1. Wizualna zmiana aktywnego guzika
+                filters.forEach(f => f.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // 2. Pobranie nazwy kategorii (z data-filter)
+                const filterValue = btn.getAttribute('data-filter');
+                
+                // 3. Uruchomienie filtrowania dla aktualnie aktywnej zakładki
+                filterCards(filterValue);
+            });
+        });
+
+        // Funkcja ukrywająca/pokazująca karty na podstawie data-category
+        function filterCards(filterValue) {
+            let activeGridId = 'favorites-grid';
+            if (document.getElementById('scheduled-section').classList.contains('active')) {
+                activeGridId = 'scheduled-grid';
+            } else if (document.getElementById('following-section').classList.contains('active')) {
+                // Jeśli jesteśmy na liście kanałów, filtry formatu (wideo) nas nie interesują
+                return; 
+            }
+
+            const grid = document.getElementById(activeGridId);
+            const cards = grid.querySelectorAll('.video-card');
+            
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                // Pomiń karty, które są aktualnie animowane do usunięcia
+                if (card.classList.contains('removing')) return;
+
+                const cardCategory = card.getAttribute('data-category');
+                
+                // Pokaż, jeśli to kategoria 'all' lub pasuje do wybranej
+                if (filterValue === 'all' || cardCategory === filterValue) {
+                    card.style.display = 'flex';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Odśwież widok "Pustego stanu", jeśli po filtracji nie ma żadnych kart
+            checkIfEmpty(activeGridId, visibleCount === 0);
+        }
+
+        // --- PRZEŁĄCZANIE WIDOKÓW (Ulubione / Obserwowane / Zaplanowane) ---
+        function switchView(viewName, btnElement) {
+            // Zmiana aktywnego guzika toggle
+            document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            // Zmiana widocznej sekcji (gridu)
+            document.querySelectorAll('.grid-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(viewName + '-section').classList.add('active');
+
+            // Aktualizacja nagłówków i widoczności filtrów
+            const title = document.getElementById('dynamic-title');
+            const subtitle = document.getElementById('dynamic-subtitle');
+            const categoryFilters = document.getElementById('category-filters');
+            
+            if (viewName === 'favorites') {
+                title.innerText = 'Twoje Ulubione';
+                subtitle.innerText = 'Zbiór materiałów, do których chętnie wracasz.';
+                categoryFilters.style.display = 'flex'; // Pokaż filtry
+            } else if (viewName === 'scheduled') {
+                title.innerText = 'Zaplanowane do obejrzenia';
+                subtitle.innerText = 'Materiały z ustawionym przypomnieniem o nauce.';
+                categoryFilters.style.display = 'flex'; // Pokaż filtry
+            } else if (viewName === 'following') {
+                title.innerText = 'Obserwowane Kanały';
+                subtitle.innerText = 'Lista edukatorów, których twórczość śledzisz.';
+                categoryFilters.style.display = 'none'; // Ukryj filtry (bo to kanały, a nie filmy)
+            }
+
+            // Jeśli to nie są kanały, zaktualizuj filtry dla danej siatki
+            if (viewName !== 'following') {
+                const currentActiveFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+                filterCards(currentActiveFilter);
+            }
+        }
+
+        // --- USUWANIE ELEMENTÓW Z LISTY WIDEO ---
+        function removeFromList(buttonElement, gridId, event) {
+            event.preventDefault(); // Zapobiega kliknięciu w kartę (przekierowaniu)
+            event.stopPropagation();
+            
+            const card = buttonElement.closest('.video-card');
+            
+            card.classList.add('removing');
+            
+            // Czekamy na koniec animacji (0.4s), po czym trwale usuwamy element i odświeżamy listę
+            setTimeout(() => {
+                card.remove();
+                // Sprawdzamy stan z zachowaniem aktualnego filtru
+                const currentActiveFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+                filterCards(currentActiveFilter);
+            }, 400); 
+        }
+
+        // --- OBSŁUGA SUBSKRYPCJI W ZAKŁADCE "OBSERWOWANE" ---
+        function toggleSub(btn, event) {
+            event.preventDefault(); 
+            event.stopPropagation(); 
+
+            if (btn.classList.contains('subscribed')) {
+                btn.classList.remove('subscribed');
+                btn.innerText = "Subskrybuj";
+            } else {
+                btn.classList.add('subscribed');
+                btn.innerText = "Subskrybujesz";
+            }
+        }
+
+        // --- SPRAWDZANIE PUSTEJ LISTY ---
+        function checkIfEmpty(gridId, forceEmpty = false) {
+            const grid = document.getElementById(gridId);
+            const emptyStateId = gridId === 'favorites-grid' ? 'favorites-empty' : 'scheduled-empty';
+            const emptyState = document.getElementById(emptyStateId);
+            
+            if(!grid || !emptyState) return;
+
+            // Policz karty, które faktycznie istnieją, nie są w trakcie usuwania i nie są ukryte przez filtr
+            const visibleCards = Array.from(grid.querySelectorAll('.video-card')).filter(card => 
+                card.style.display !== 'none' && !card.classList.contains('removing')
+            ).length;
+            
+            if(visibleCards === 0 || forceEmpty) {
+                grid.style.display = 'none';
+                emptyState.classList.add('active');
+            } else {
+                grid.style.display = 'grid';
+                emptyState.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>

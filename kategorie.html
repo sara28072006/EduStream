@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Kategorie i Kanały</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        :root {
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --bg-dark: #050505;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-color: #0A84FF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.35; animation: float 20s infinite ease-in-out alternate; }
+        .blob-1 { width: 500px; height: 500px; background: #2E0A59; top: -10%; left: -10%; }
+        .blob-2 { width: 600px; height: 600px; background: #002B5E; bottom: -20%; right: -10%; animation-delay: -10s; }
+
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%;
+            padding: 25px 50px; display: flex; justify-content: space-between;
+            align-items: center; z-index: 50;
+            background: linear-gradient(to bottom, rgba(5,5,5,0.9) 0%, rgba(5,5,5,0) 100%);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        }
+        .nav-left { display: flex; align-items: center; gap: 50px; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .nav-links { display: flex; align-items: center; gap: 30px; }
+        .nav-link { position: relative; color: var(--text-muted); text-decoration: none; font-size: 15px; font-weight: 500; transition: color 0.3s; }
+        .nav-link:hover { color: var(--text-main); }
+        .nav-link.active { color: var(--text-main); font-weight: 600; }
+        .nav-link.active::after {
+            content: ''; position: absolute; bottom: -6px; left: 0;
+            width: 100%; height: 2px; background-color: var(--text-main); border-radius: 2px;
+        }
+
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .user-profile-link {
+            display: flex; align-items: center; gap: 12px; text-decoration: none; color: white;
+            padding: 4px 10px 4px 4px; border-radius: 30px; transition: 0.3s; background: var(--glass-bg); border: 1px solid var(--glass-border);
+        }
+        .user-profile-link:hover { background: var(--glass-hover); }
+        .user-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+
+        /* --- MAIN CONTENT & FILTERS --- */
+        .categories-container { max-width: 1400px; margin: 0 auto; padding: 20px 50px 80px 50px; }
+
+        .page-header { margin-bottom: 40px; }
+        .page-title { font-size: 42px; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 25px; }
+        
+        /* Pasek Narzędzi */
+        .toolbar { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; align-items: center; }
+
+        .local-search {
+            flex-grow: 1; max-width: 500px; background: var(--glass-bg); border: 1px solid var(--glass-border);
+            padding: 14px 20px; border-radius: 14px; display: flex; align-items: center; gap: 12px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .local-search:focus-within { border-color: var(--accent-color); background: rgba(10, 132, 255, 0.05); box-shadow: 0 4px 20px rgba(10, 132, 255, 0.1); }
+        .local-search input { background: transparent; border: none; color: white; font-size: 15px; outline: none; width: 100%; font-family: inherit; }
+        .local-search input::placeholder { color: var(--text-muted); }
+
+        .dropdown-filter {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px;
+            padding: 14px 20px; display: flex; align-items: center; gap: 10px; transition: 0.3s;
+        }
+        .dropdown-filter:hover { border-color: rgba(255,255,255,0.2); }
+        .filter-label { color: var(--text-muted); font-size: 14px; font-weight: 500; }
+        .glass-select { background: transparent; border: none; color: white; font-size: 14px; font-weight: 600; outline: none; cursor: pointer; font-family: inherit; }
+        .glass-select option { background: var(--bg-dark); color: white; }
+
+        /* Filtry zakładowe */
+        .pill-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 1px solid var(--glass-border); }
+        .pill-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-muted); padding: 10px 20px; border-radius: 30px; font-size: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .pill-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+        .pill-btn.active { background: white; color: var(--bg-dark); font-weight: 700; border-color: white; }
+
+        /* --- GRID KATEGORII --- */
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 30px; transition: opacity 0.4s ease; }
+        .category-grid:hover .cat-card { opacity: 0.4; filter: grayscale(40%); }
+        .category-grid .cat-card:hover { opacity: 1; filter: grayscale(0%); transform: translateY(-10px) scale(1.02); z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+
+        .cat-card { position: relative; border-radius: 24px; overflow: hidden; aspect-ratio: 16/10; cursor: pointer; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid rgba(255,255,255,0.1); display: block; text-decoration: none;}
+        
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+        .cat-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; transition: transform 0.8s ease; }
+        .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; transition: 0.5s; }
+        .cat-tech .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(10, 132, 255, 0.4) 100%); }
+        .cat-history .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(255, 159, 10, 0.4) 100%); }
+        .cat-bio .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(52, 199, 89, 0.4) 100%); }
+        .cat-space .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(94, 92, 230, 0.4) 100%); }
+        .cat-art .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(255, 55, 95, 0.4) 100%); }
+        .cat-math .overlay { background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(50, 173, 230, 0.4) 100%); }
+
+        .cat-card:hover .cat-bg { transform: scale(1.1); }
+        .cat-card:hover .overlay { opacity: 0.8; }
+
+        .cat-content { position: absolute; bottom: 0; left: 0; width: 100%; padding: 30px; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; color: white;}
+        .cat-icon { width: 40px; height: 40px; margin-bottom: 15px; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5)); transition: transform 0.4s; }
+        .cat-card:hover .cat-icon { transform: translateY(-5px); }
+        .cat-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.8); }
+        .cat-desc { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.5; text-shadow: 0 2px 8px rgba(0,0,0,1); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .cat-action { margin-top: 20px; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; width: fit-content; border: 1px solid rgba(255,255,255,0.3); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(10px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .cat-card:hover .cat-action { opacity: 1; transform: translateY(0); }
+        .cat-action svg { width: 14px; height: 14px; }
+
+        .format-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1px solid rgba(255,255,255,0.1); z-index: 5; color: white;}
+
+        /* --- SEKCJA KANAŁÓW / TWÓRCÓW --- */
+        .section-header { margin-top: 60px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
+        .section-title { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; }
+        
+        .channel-row { display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; scrollbar-width: none; -ms-overflow-style: none; }
+        .channel-row::-webkit-scrollbar { display: none; }
+
+        .channel-card { min-width: 220px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 25px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: 0.3s; cursor: pointer; flex-shrink: 0; text-decoration: none; color: white;}
+        .channel-card:hover { transform: translateY(-5px); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); box-shadow: 0 15px 30px rgba(0,0,0,0.3);}
+        
+        .channel-avatar { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 3px solid transparent; transition: 0.3s; }
+        .channel-card:hover .channel-avatar { border-color: var(--accent-color); }
+        
+        .channel-name { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .channel-subs { font-size: 12px; color: var(--text-muted); margin-bottom: 15px; }
+        
+        .subscribe-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 8px 20px; border-radius: 15px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.3s; width: 100%; font-family: inherit;}
+        .subscribe-btn:hover { background: var(--text-main); color: var(--bg-dark); }
+        .subscribe-btn.subscribed { background: transparent; border: 1px solid var(--glass-border); color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Strona Główna</a>
+                <a href="kategorie.html" class="nav-link active">Kategorie</a>
+                <a href="watchlist.html" class="nav-link">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link">Live <span style="color: #ef4444; margin-left: 4px; font-size: 18px; animation: pulse 2s infinite;">•</span></a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="categories-container">
+        
+        <div class="page-header">
+            <h1 class="page-title">Co chcesz dziś odkryć?</h1>
+            
+            <div class="toolbar">
+                <div class="local-search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" width="20" height="20">
+                        <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" placeholder="Szukaj kategorii, tematów lub twórców (np. Dawid Fizyka)..." id="searchInput">
+                </div>
+
+                <div class="dropdown-filter">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2" width="18" height="18">
+                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line>
+                    </svg>
+                    <span class="filter-label">Format:</span>
+                    <select class="glass-select" id="typeSelect">
+                        <option value="all">Wszystkie</option>
+                        <option value="film">Filmy pełnometrażowe</option>
+                        <option value="serial">Seriale</option>
+                        <option value="bajka">Bajki</option>
+                        <option value="short">EduShorts (Filmiki)</option>
+                        <option value="podcast">Podcasty i EduTalks</option>
+                    </select>
+                </div>
+
+                <div class="dropdown-filter">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2" width="18" height="18">
+                        <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="filter-label">Czas trwania:</span>
+                    <select class="glass-select" id="durationSelect">
+                        <option value="all">Dowolny</option>
+                        <option value="short">< 10 min</option>
+                        <option value="medium">10 - 30 min</option>
+                        <option value="long">> 30 min</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pill-filters" id="categoryFilters">
+                <button class="pill-btn active" data-filter="all">Wszystkie kategorie</button>
+                <button class="pill-btn" data-filter="scisłe">Nauki Ścisłe (STEM)</button>
+                <button class="pill-btn" data-filter="humanistyczne">Humanistyka i Sztuka</button>
+                <button class="pill-btn" data-filter="spoleczne">Nauki Społeczne</button>
+                <button class="pill-btn" data-filter="jezyki">Języki Obce</button>
+                <button class="pill-btn" data-filter="hobby">Hobby i Rozwój</button>
+            </div>
+        </div>
+
+        <div class="category-grid" id="mainCategoryGrid">
+            
+            <a href="edustream.main.html" class="cat-card cat-tech" data-category="scisłe" data-type="short">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay"></div>
+                <div class="format-badge">Filmiki</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #0A84FF;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    <h2 class="cat-title">Technologia & AI</h2>
+                    <p class="cat-desc">Zrozum algorytmy, programowanie i przyszłość sztucznej inteligencji.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-history" data-category="humanistyczne" data-type="film">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1461360370896-922624d122ea?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay"></div>
+                <div class="format-badge">Filmy</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #FF9F0A;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    <h2 class="cat-title">Historia Świata</h2>
+                    <p class="cat-desc">Od starożytnych imperiów po współczesne rewolucje geopolityczne.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-space" data-category="scisłe" data-type="serial">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay"></div>
+                <div class="format-badge">Seriale</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #5E5CE6;"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                    <h2 class="cat-title">Kosmos & Astronomia</h2>
+                    <p class="cat-desc">Tajemnice czarnych dziur, fizyka kwantowa i eksploracja galaktyk.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-bio" data-category="scisłe" data-type="bajka">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay"></div>
+                <div class="format-badge">Bajki</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #34C759;"><path d="M2 22A20 20 0 0 1 22 2c0 11-9 20-20 20z"></path><path d="M2 22A20 20 0 0 0 22 2c0 11-9 20-20 20z"></path><line x1="2" y1="22" x2="22" y2="2"></line></svg>
+                    <h2 class="cat-title">Natura & Biologia</h2>
+                    <p class="cat-desc">Zbadaj mikroskopijne komórki i niesamowite ekosystemy naszej planety.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-art" data-category="humanistyczne" data-type="film">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay"></div>
+                <div class="format-badge">Filmy</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #FF375F;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c1.06 0 2.08-.2 3.01-.56.98-.38 2.08.06 2.45 1.05.13.33.22.68.22 1.04 0 1.1-.9 2-2 2H12"></path><circle cx="7.5" cy="10.5" r="1.5"></circle><circle cx="10.5" cy="6.5" r="1.5"></circle><circle cx="15.5" cy="7.5" r="1.5"></circle><circle cx="18.5" cy="12.5" r="1.5"></circle></svg>
+                    <h2 class="cat-title">Kultura & Sztuka</h2>
+                    <p class="cat-desc">Analiza największych dzieł malarskich, architektury i muzyki klasycznej.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-math" data-category="scisłe" data-type="podcast">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(245, 158, 11, 0.4) 100%);"></div>
+                <div class="format-badge" style="background: #f59e0b; color: white; border:none;">Podcasty</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="8" y1="22" x2="16" y2="22"></line></svg>
+                    <h2 class="cat-title">Rozmowy o Wszechświecie</h2>
+                    <p class="cat-desc">Słuchaj wywiadów z ekspertami i odkrywaj najnowsze teorie fizyczne.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-bio" data-category="spoleczne" data-type="serial">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(245, 158, 11, 0.4) 100%);"></div>
+                <div class="format-badge">Seriale</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #f59e0b;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    <h2 class="cat-title">Psychologia & Społeczeństwo</h2>
+                    <p class="cat-desc">Jak działa ludzki umysł i jak budujemy więzi społeczne.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+
+            <a href="edustream.main.html" class="cat-card cat-space" data-category="jezyki" data-type="bajka">
+                <div class="cat-bg" style="background-image: url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=800&auto=format&fit=crop');"></div>
+                <div class="overlay" style="background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(236, 72, 153, 0.4) 100%);"></div>
+                <div class="format-badge">Bajki</div>
+                <div class="cat-content">
+                    <svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: #ec4899;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <h2 class="cat-title">Języki Świata</h2>
+                    <p class="cat-desc">Nauka języków obcych w praktyce. Konwersacje, gramatyka i kultura.</p>
+                    <div class="cat-action">Przeglądaj <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg></div>
+                </div>
+            </a>
+        </div>
+
+        <div class="section-header">
+            <h2 class="section-title">Polecani Twórcy i Kanały</h2>
+        </div>
+
+        <div class="channel-row" id="channelsRow">
+            
+            <a href="kanaledustream.html" class="channel-card">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                <h3 class="channel-name">Dawid Fizyka</h3>
+                <p class="channel-subs">120K Subskrybentów</p>
+                <button class="subscribe-btn" onclick="toggleSub(this, event)">Subskrybuj</button>
+            </a>
+
+            <a href="kanaledustream.html" class="channel-card">
+                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                <h3 class="channel-name">HistoriaBezMitu</h3>
+                <p class="channel-subs">340K Subskrybentów</p>
+                <button class="subscribe-btn subscribed" onclick="toggleSub(this, event)">Subskrybujesz</button>
+            </a>
+
+            <a href="kanaledustream.html" class="channel-card">
+                <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                <h3 class="channel-name">CodeMaster PL</h3>
+                <p class="channel-subs">85K Subskrybentów</p>
+                <button class="subscribe-btn" onclick="toggleSub(this, event)">Subskrybuj</button>
+            </a>
+
+            <a href="kanaledustream.html" class="channel-card">
+                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                <h3 class="channel-name">BioZiemia</h3>
+                <p class="channel-subs">210K Subskrybentów</p>
+                <button class="subscribe-btn" onclick="toggleSub(this, event)">Subskrybuj</button>
+            </a>
+
+            <a href="kanaledustream.html" class="channel-card">
+                <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=200&auto=format&fit=crop" class="channel-avatar" alt="Twórca">
+                <h3 class="channel-name">Sztuka na luzie</h3>
+                <p class="channel-subs">45K Subskrybentów</p>
+                <button class="subscribe-btn" onclick="toggleSub(this, event)">Subskrybuj</button>
+            </a>
+
+        </div>
+
+    </main>
+
+    <script>
+        // --- LOGIKA ZAAWANSOWANEGO FILTROWANIA ---
+        const filterBtns = document.querySelectorAll('.pill-btn');
+        const typeSelect = document.getElementById('typeSelect');
+        const cards = document.querySelectorAll('.cat-card');
+
+        function applyFilters() {
+            const activeCategoryBtn = document.querySelector('.pill-btn.active');
+            const categoryFilter = activeCategoryBtn ? activeCategoryBtn.getAttribute('data-filter') : 'all';
+            const typeFilter = typeSelect.value;
+
+            cards.forEach(card => {
+                card.style.animation = 'none';
+                card.offsetHeight; 
+                
+                const cardCategory = card.getAttribute('data-category');
+                const cardType = card.getAttribute('data-type');
+                
+                const matchCategory = (categoryFilter === 'all' || cardCategory === categoryFilter);
+                const matchType = (typeFilter === 'all' || cardType === typeFilter);
+
+                if (matchCategory && matchType) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeIn 0.4s ease forwards';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(f => f.classList.remove('active'));
+                btn.classList.add('active');
+                applyFilters();
+            });
+        });
+
+        typeSelect.addEventListener('change', () => {
+            applyFilters();
+        });
+
+
+        // --- OBSŁUGA SUBSKRYPCJI KANAŁÓW ---
+        function toggleSub(btn, event) {
+            event.preventDefault(); 
+            event.stopPropagation(); 
+
+            if (btn.classList.contains('subscribed')) {
+                btn.classList.remove('subscribed');
+                btn.innerText = "Subskrybuj";
+            } else {
+                btn.classList.add('subscribed');
+                btn.innerText = "Subskrybujesz";
+            }
+        }
+
+
+        // --- WYSZUKIWARKA (Przekierowanie po wpisaniu tekstu) ---
+        const searchInput = document.getElementById('searchInput');
+        
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            
+            cards.forEach(card => {
+                const title = card.querySelector('.cat-title').innerText.toLowerCase();
+                const desc = card.querySelector('.cat-desc').innerText.toLowerCase();
+                
+                if(title.includes(term) || desc.includes(term)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            const channels = document.querySelectorAll('.channel-card');
+            channels.forEach(channel => {
+                const name = channel.querySelector('.channel-name').innerText.toLowerCase();
+                if(name.includes(term)) {
+                    channel.style.display = 'flex';
+                } else {
+                    channel.style.display = 'none';
+                }
+            });
+        });
+
+        // PRZEKIEROWANIE DO edustream.main.html PO WCIŚNIĘCIU ENTER
+        searchInput.addEventListener('keydown', function(e) {
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                window.location.href = 'edustream.main.html';
+            }
+        });
+
+    </script>
+</body>
+</html>

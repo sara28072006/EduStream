@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream Live - Misja Mars 2030</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        :root {
+            /* Akcenty stałe (w obu motywach) */
+            --accent-color: #f59e0b; /* Pomarańczowy dla podcastów */
+            --accent-hover: #fbbf24;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #a855f7); 
+            --success-green: #34C759;
+            --pdf-red: #ef4444;
+
+            /* Zmienne dla motywu CIEMNEGO (Domyślne) */
+            --bg-dark: #0f1115; 
+            --bg-panel: #1a1c23;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-hover: rgba(255, 255, 255, 0.1);
+            --nav-bg-1: rgba(15,17,21,0.95);
+            --nav-bg-2: rgba(15,17,21,0.2);
+            --shadow-strong: rgba(0,0,0,0.8);
+            --sidebar-bg: rgba(15, 15, 15, 0.95);
+            --text-host: #ffffff;
+            --text-guest: #fde68a; /* Jasny złoty */
+            --input-bg: rgba(255,255,255,0.05);
+            --live-red: #FF3B30;
+            --warning-color: #FF9F0A; 
+            
+            /* AI Premium Gradient: Szaro-Fioletowo-Niebieski */
+            --ai-gradient: linear-gradient(135deg, #64748b, #8b5cf6, #3b82f6);
+            --ai-color: #8b5cf6;
+            --ai-bg: rgba(139, 92, 246, 0.12);
+            --ai-border: rgba(139, 92, 246, 0.3);
+        }
+
+        /* Zmienne dla motywu JASNEGO (Apple Style) */
+        html[data-theme="light"] {
+            --bg-dark: #f5f5f7; /* Chłodny, jasny szary z Apple */
+            --bg-panel: #ffffff;
+            --text-main: #1d1d1f; /* Ciemny grafitowy tekst Apple */
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(0, 0, 0, 0.04);
+            --glass-hover: rgba(0, 0, 0, 0.08);
+            --nav-bg-1: rgba(245,245,247,0.95);
+            --nav-bg-2: rgba(245,245,247,0.2);
+            --shadow-strong: rgba(0,0,0,0.15);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --text-host: #1d1d1f;
+            --text-guest: #d97706; /* Ciemniejszy pomarańcz dla kontrastu na białym */
+            --input-bg: rgba(0,0,0,0.03);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            overflow-x: hidden; min-height: 100vh; display: flex; flex-direction: column;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.2; animation: float 20s infinite ease-in-out alternate; transition: background 0.5s ease;}
+        /* Kolory kulek dla motywu ciemnego */
+        .blob-1 { width: 600px; height: 600px; background: #7c2d12; top: -10%; left: -10%; }
+        .blob-2 { width: 500px; height: 500px; background: #9a3412; bottom: -20%; right: -10%; animation-delay: -10s; }
+        /* Kolory kulek dla motywu jasnego (chłodne, neutralne pastelowe tonacje) */
+        html[data-theme="light"] .blob-1 { background: #e0f2fe; } 
+        html[data-theme="light"] .blob-2 { background: #f3e8ff; } 
+        
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
+
+        /* --- NAVBAR (Cienki) --- */
+        .navbar {
+            position: absolute; top: 0; left: 0; width: 100%; 
+            padding: 12px 40px; /* Zmniejszono padding, by pasek był węższy */
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            background: linear-gradient(to bottom, var(--nav-bg-1) 0%, var(--nav-bg-2) 100%);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border);
+            height: 70px;
+        }
+        .nav-left { display: flex; align-items: center; flex-shrink: 0; gap: 30px;}
+        
+        .back-btn-small {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            display: flex; justify-content: center; align-items: center; color: var(--text-main);
+            transition: 0.3s; text-decoration: none; backdrop-filter: blur(10px);
+        }
+        .back-btn-small:hover { background: var(--glass-hover); transform: scale(1.05); }
+
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); transition: 0.4s; }
+        html[data-theme="light"] .logo-img { filter: drop-shadow(0 2px 10px rgba(0,0,0,0.1)) invert(1) hue-rotate(180deg); }
+
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        .nav-link { position: relative; color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s; display: flex; align-items: center; gap: 6px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0.9;}
+        html[data-theme="light"] .nav-link { text-shadow: none; font-weight: 600; }
+        .nav-link:hover { opacity: 1; }
+        .nav-link.active { font-weight: 700; opacity: 1; color: var(--text-main);}
+
+        .live-dot { width: 6px; height: 6px; background-color: var(--live-red); border-radius: 50%; box-shadow: 0 0 8px var(--live-red); animation: pulse 2s infinite; }
+
+        .search-container { flex-grow: 1; display: flex; justify-content: center; padding: 0 30px; }
+        .search-bar { 
+            background: var(--input-bg); border: 1px solid var(--glass-border); 
+            border-radius: 24px; padding: 8px 15px; display: flex; align-items: center; gap: 12px; 
+            width: 100%; max-width: 500px; transition: 0.3s; 
+        }
+        .search-bar:focus-within { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); background: var(--glass-bg);}
+        .search-bar input { background: transparent; border: none; color: var(--text-main); outline: none; width: 100%; font-family: inherit; font-size: 13px; }
+        .search-bar input::placeholder { color: var(--text-muted); }
+
+        .nav-right { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+        
+        .theme-toggle-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            color: var(--text-muted); width: 34px; height: 34px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;
+        }
+        .theme-toggle-btn:hover { color: var(--accent-color); background: var(--glass-hover); border-color: var(--accent-color); }
+        .theme-toggle-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        .back-to-hub-btn {
+            display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none;
+            font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); transition: 0.3s; white-space: nowrap;
+        }
+        .back-to-hub-btn:hover { background: rgba(255, 59, 48, 0.15); color: #ff6b6b; border-color: rgba(255, 59, 48, 0.3); }
+        .user-profile-link {
+            display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main);
+            padding: 4px 10px 4px 4px; border-radius: 30px; transition: 0.3s; background: var(--glass-bg); border: 1px solid var(--glass-border); white-space: nowrap;
+        }
+        .user-profile-link:hover { background: var(--glass-hover); }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+        /* --- MAIN LAYOUT --- */
+        .live-layout { display: flex; height: 100vh; width: 100%; overflow: hidden; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* --- LEWA KOLUMNA: WIDEO & ZAKŁADKI --- */
+        .video-column { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; background: transparent; position: relative; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .video-column::-webkit-scrollbar { width: 6px; }
+        .video-column::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        /* Wideo zrekompensowane o 70px żeby zmieściło się pod węższym navbarem */
+        .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; transition: all 0.4s ease; padding-top: 70px; }
+        
+        .video-column.details-hidden .player-wrapper { flex-grow: 1; aspect-ratio: auto; border-bottom: none; }
+        .video-column.details-hidden .event-details { display: none; }
+        
+        .player-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; filter: blur(5px); transform: scale(1.05); transition: 0.8s ease;}
+        html[data-theme="light"] .player-bg { opacity: 0.8; }
+
+        /* --- METALICZNA PLAKIETKA: TERAZ OMAWIANE --- */
+        .current-topic-badge {
+            position: absolute; top: 90px; /* Przesunięte w dół by nie chowało się pod cienkim navbarem */
+            left: 20px; z-index: 50; 
+            background: rgba(30, 30, 35, 0.75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 20px;
+            padding: 8px 16px; font-size: 13px; display: flex; align-items: center; gap: 8px;
+            transition: top 0.3s, opacity 0.3s; box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.8);
+        }
+
+        html[data-theme="light"] .current-topic-badge {
+            background: rgba(220, 220, 220, 0.7); border-color: rgba(0,0,0,0.1); color: rgba(0,0,0,0.7);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        /* Animowany Metaliczny Tekst */
+        .current-topic-badge strong {
+            font-weight: 800; letter-spacing: 0.5px;
+            background: linear-gradient(110deg, #a0a0a0 0%, #ffffff 20%, #d3d3d3 40%, #ffffff 60%, #a0a0a0 80%, #ffffff 100%);
+            background-size: 200% auto;
+            color: transparent; -webkit-background-clip: text; background-clip: text;
+            animation: metalFlow 3s linear infinite;
+        }
+        html[data-theme="light"] .current-topic-badge strong {
+            background: linear-gradient(110deg, #555 0%, #000 20%, #444 40%, #000 60%, #555 80%, #000 100%);
+            background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text;
+        }
+        @keyframes metalFlow { to { background-position: 200% center; } }
+        .live-pulse-icon { width: 8px; height: 8px; background: var(--live-red); border-radius: 50%; box-shadow: 0 0 8px var(--live-red); animation: pulse 2s infinite; }
+
+        /* KONTROLKI W PRAWYM DOLNYM ROGU NA WIDEO */
+        .bottom-right-controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 50; }
+        .bottom-right-controls > * { pointer-events: auto; }
+        
+        .focus-btn { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; font-family: inherit; }
+        .focus-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .focus-btn.chat-toggle { display: none; }
+        .live-layout.chat-hidden .focus-btn.chat-toggle { display: flex; }
+
+        .fs-btn { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .fs-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+
+        /* Styl dla prawdziwego Fullscreena */
+        body.is-fullscreen .navbar { display: none; }
+        body.is-fullscreen .video-column { width: 100%; height: 100vh; padding-top: 0; background: #000; }
+        body.is-fullscreen .player-wrapper { height: 100vh; aspect-ratio: auto; padding-top: 0; }
+        body.is-fullscreen .current-topic-badge { top: 20px; } /* Reset w fullscreenie */
+        body.is-fullscreen .event-details { display: none; }
+        body.is-fullscreen .chat-column { display: none; }
+        
+        /* Szczegóły pod wideo */
+        .event-details { padding: 30px 40px; background: var(--bg-base); }
+        .event-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+        .event-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .event-speaker { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 14px; }
+        .speaker-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+        
+        .viewers-badge { display: flex; align-items: center; gap: 6px; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.3); color: #ff6b6b; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+
+        .share-educhat-btn {
+            display: flex; align-items: center; gap: 8px;
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(10, 132, 255, 0.3);
+            color: var(--text-main); padding: 6px 14px; border-radius: 20px;
+            font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.3s;
+            font-family: inherit;
+        }
+        .share-educhat-btn:hover {
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--accent-color); transform: translateY(-2px);
+        }
+        .share-educhat-btn svg { width: 14px; height: 14px; color: var(--accent-color); }
+
+        /* Zakładki */
+        .interactive-tabs { display: flex; gap: 30px; border-bottom: 1px solid var(--glass-border); margin-bottom: 30px; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 15px; font-weight: 600; padding-bottom: 15px; cursor: pointer; position: relative; transition: 0.3s; font-family: inherit; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--text-main); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--accent-color); border-radius: 3px 3px 0 0; }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Harmonogram */
+        .agenda-list { display: flex; flex-direction: column; gap: 15px; }
+        .agenda-item { display: flex; gap: 20px; background: var(--glass-bg); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--glass-border); }
+        .agenda-time { font-weight: 700; color: var(--text-muted); font-size: 15px; min-width: 60px; }
+        .agenda-item.current-item { border-color: var(--accent-color); background: rgba(10, 132, 255, 0.05); }
+        .agenda-item.current-item .agenda-time { color: var(--accent-color); }
+        .agenda-desc h4 { font-size: 15px; margin-bottom: 4px; color: var(--text-main);}
+        .agenda-desc p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+        /* --- NOTATNIK --- */
+        .ai-notes-header { display: flex; justify-content: space-between; align-items: center; background: rgba(10, 132, 255, 0.05); border: 1px solid rgba(10, 132, 255, 0.2); padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; }
+        .ai-listening-indicator { display: none; align-items: center; gap: 8px; color: var(--accent-color); font-size: 12px; font-weight: 600; margin-bottom: 10px; animation: fadeIn 0.3s ease;}
+        .ai-spinner { width: 14px; height: 14px; border: 2px solid rgba(10, 132, 255, 0.3); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-border); transition: .4s; border-radius: 24px; border: 1px solid var(--glass-border); }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .toggle-slider { background-color: var(--accent-color); border-color: var(--accent-color); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        .live-notes-area { width: 100%; height: 250px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; color: var(--text-main); font-family: inherit; font-size: 14px; resize: none; outline: none; line-height: 1.6; transition: 0.3s; }
+        .live-notes-area:focus { border-color: var(--accent-color); background: rgba(10, 132, 255, 0.05); }
+
+        /* --- ASYSTENT AI W ZAKŁADCE (Czarno-Biały + Gradient) --- */
+        .qa-ai-container { background: var(--bg-panel); border: 1px solid var(--glass-border); border-radius: 16px; display: flex; flex-direction: column; height: 350px; overflow: hidden; }
+        .qa-ai-header { background: var(--glass-bg); padding: 12px 20px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 8px;}
+        .qa-ai-header svg { color: var(--ai-color); }
+        
+        .qa-chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .qa-chat-area::-webkit-scrollbar { width: 4px; }
+        .qa-chat-area::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        
+        /* Chmurka Użytkownika (Niebiesko-Fioletowy Gradient) */
+        .q-msg { 
+            background: var(--ai-gradient); color: white; border: none;
+            padding: 10px 14px; border-radius: 12px 12px 0 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; align-self: flex-end; 
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+        }
+        /* Chmurka AI (Czarno-Biały styl) */
+        .a-msg { 
+            background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-main); 
+            padding: 10px 14px; border-radius: 12px 12px 12px 0; font-size: 13.5px; line-height: 1.5; max-width: 85%; align-self: flex-start; 
+        }
+        
+        .qa-input-box { display: flex; padding: 15px; border-top: 1px solid var(--glass-border); background: transparent;}
+        .qa-input-wrapper { display: flex; flex-grow: 1; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 5px 5px 5px 15px; align-items: center; transition: 0.3s; }
+        .qa-input-wrapper:focus-within { border-color: var(--ai-color); }
+        .qa-input-wrapper input { flex-grow: 1; background: transparent; border: none; color: var(--text-main); outline: none; font-size: 13.5px; font-family: inherit;}
+        .qa-send-btn { background: var(--text-main); border: none; width: 34px; height: 34px; border-radius: 50%; color: var(--bg-base); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;}
+        .qa-send-btn:hover { transform: scale(1.05); }
+
+        /* Karty PDF */
+        .pdf-card { 
+            display: flex; align-items: center; gap: 15px; background: var(--input-bg); 
+            border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; 
+            text-decoration: none; color: var(--text-main); transition: 0.3s; margin-bottom: 10px; cursor: pointer;
+        }
+        .pdf-card:hover { background: var(--glass-hover); border-color: var(--accent-color); transform: translateY(-2px);}
+        .pdf-icon { background: var(--live-red); color: white; font-size: 11px; font-weight: 800; padding: 6px 10px; border-radius: 8px;}
+        .pdf-info { display: flex; flex-direction: column; flex-grow: 1; }
+        .pdf-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; color: var(--text-main);}
+        .pdf-size { font-size: 11px; color: var(--text-muted); }
+
+        /* --- PRAWA KOLUMNA: CZAT PUBLICZNY (ŻYWY CZAT) --- */
+        .chat-column { width: 380px; flex-shrink: 0; background: var(--bg-panel); border-left: 1px solid var(--glass-border); display: flex; flex-direction: column; height: 100%; transition: margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s; padding-top: 70px; /* Offset na navbar */ }
+        .live-layout.chat-hidden .chat-column { margin-right: -380px; opacity: 0; pointer-events: none; }
+
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        .close-chat-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.3s; display: flex; align-items: center;}
+        .close-chat-btn:hover { color: var(--text-main); transform: scale(1.1); }
+
+        .chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .msg-box { display: flex; gap: 12px; }
+        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; color: white; flex-shrink: 0;}
+        .msg-content { display: flex; flex-direction: column; gap: 4px; }
+        .msg-author { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .msg-text { font-size: 13.5px; line-height: 1.4; color: var(--text-main); opacity: 0.9;}
+        .msg-box.official .msg-author { color: var(--accent-color); }
+        .msg-box.official .msg-text { background: rgba(10, 132, 255, 0.1); padding: 8px 12px; border-radius: 0 12px 12px 12px; border: 1px solid rgba(10, 132, 255, 0.2); }
+        
+        /* Styl dla pytań Q&A */
+        .msg-box.qna-msg .msg-text { background: rgba(255, 159, 10, 0.15); border: 1px solid rgba(255, 159, 10, 0.4); border-radius: 0 12px 12px 12px; color: var(--text-main); padding: 10px 12px;}
+        .qna-badge { display: inline-block; background: var(--warning-color); color: black; font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        .chat-input-area { padding: 20px; border-top: 1px solid var(--glass-border); background: var(--bg-panel); transition: 0.3s; }
+        .chat-input-wrapper { display: flex; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 5px; transition: 0.3s; }
+        .chat-input-wrapper:focus-within { border-color: var(--accent-color); }
+        .chat-input { flex-grow: 1; background: transparent; border: none; color: var(--text-main); padding: 10px 15px; font-size: 14px; outline: none; font-family: inherit; }
+        .chat-input::placeholder { color: var(--text-muted); transition: 0.3s; }
+        .send-btn { background: var(--accent-color); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; transition: 0.3s; }
+        .send-btn:hover { transform: scale(1.05); background: var(--accent-hover); }
+
+        .ask-q-btn { width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: var(--text-muted); padding: 10px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 12px; transition: 0.3s; font-weight: 600;}
+        html[data-theme="light"] .ask-q-btn { border-color: rgba(0,0,0,0.2); }
+        .ask-q-btn:hover { background: var(--glass-hover); color: var(--text-main); border-color: var(--text-muted); }
+        
+        .chat-input-area.qna-mode .chat-input-wrapper { border-color: var(--warning-color); background: rgba(255, 159, 10, 0.05); box-shadow: 0 4px 15px rgba(255, 159, 10, 0.1); }
+        .chat-input-area.qna-mode .chat-input::placeholder { color: rgba(255, 159, 10, 0.6); }
+        .chat-input-area.qna-mode .send-btn { background: var(--warning-color); color: black; }
+        .chat-input-area.qna-mode .ask-q-btn { background: rgba(255, 159, 10, 0.15); border-color: var(--warning-color); color: var(--warning-color); border-style: solid; }
+
+        /* --- FULLSCREEN PŁYWAJĄCY SIDEBAR & PANELE (PIGUŁKA) --- */
+        .fs-sidebar {
+            position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+            background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 40px; /* Pigułka */
+            padding: 15px 10px; display: flex; flex-direction: column; gap: 15px;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        html[data-theme="light"] .fs-sidebar { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
+        body.is-fullscreen .fs-sidebar { opacity: 1; pointer-events: auto; }
+        body.is-fullscreen.fs-panel-open .fs-sidebar { right: 440px; } /* Odsuwa pigułkę, gdy panel jest otwarty */
+
+        .fs-icon {
+            width: 44px; height: 44px; border-radius: 50%; background: transparent; border: 1px solid transparent;
+            color: var(--text-muted); cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center;
+        }
+        .fs-icon:hover { background: var(--glass-hover); color: var(--text-main); transform: scale(1.1); }
+        .fs-icon.active { background: var(--ai-bg); border-color: var(--ai-border); color: var(--ai-color); }
+        .fs-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
+
+        /* Pływający Panel w Fullscreen (Pigułka) */
+        .fs-panel {
+            position: fixed; right: -420px; top: 20px; bottom: 20px; width: 400px;
+            background: rgba(15,15,15,0.95); backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.1); z-index: 9998;
+            border-radius: 30px; 
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; padding-top: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        html[data-theme="light"] .fs-panel { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.15);}
+        body.is-fullscreen.fs-panel-open .fs-panel { right: 20px; }
+
+        .fs-panel-header { padding: 15px 25px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .fs-panel-title { font-weight: 700; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
+        .fs-close-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); width: 32px; height: 32px; border-radius: 50%; color: var(--text-muted); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;}
+        .fs-close-btn:hover { color: var(--text-main); background: var(--glass-hover); transform: rotate(90deg); }
+
+        .fs-content { flex-grow: 1; display: none; flex-direction: column; overflow-y: auto; padding: 25px; animation: fadeIn 0.3s ease;}
+        .fs-content.active { display: flex; }
+
+        /* Fs Note */
+        .fs-notes-area { flex-grow: 1; background: transparent; border: none; color: var(--text-main); outline: none; font-family: inherit; font-size: 14px; line-height: 1.6; resize: none; margin-top: 15px;}
+        .fs-notes-area::placeholder { color: var(--text-muted); }
+        
+        /* Fs Chat */
+        .fs-chat-box { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;}
+
+        /* --- TOAST NOTIFICATIONS --- */
+        .toast { position: fixed; bottom: 30px; left: 30px; background: var(--bg-panel); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); color: var(--text-main); padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: 0.3s; transform: translateY(20px); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast.success { border-left: 3px solid var(--success-green); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast svg { stroke-width: 1.5; fill: none; stroke: currentColor; width: 18px; height: 18px;}
+        
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="livewydarzenia.html" class="back-btn-small" title="Wróć do wydarzeń">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </a>
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Strona Główna</a>
+                <a href="kategorie.html" class="nav-link">Kategorie</a>
+                <a href="watchlist.html" class="nav-link">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link active">
+                    Live <span class="live-dot"></span>
+                </a>
+            </nav>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18" style="opacity:0.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Szukaj w podcaście, wpisz pojęcie lub zapytaj AI...">
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw jasny/ciemny">
+                <svg id="themeIcon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+            
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="live-layout" id="liveLayout">
+        
+        <div class="video-column" id="videoColumn">
+            
+            <div class="player-wrapper">
+                
+                <video id="actualLiveVideo" src="https://www.w3schools.com/html/mov_bbb.mp4" autoplay loop muted playsinline style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: 1;"></video>
+
+                <div class="current-topic-badge">
+                    <span class="live-pulse-icon"></span>
+                    <span>Teraz omawiane: <strong>Systemy podtrzymywania życia</strong></span>
+                </div>
+
+                <div class="bottom-right-controls">
+                    <button class="focus-btn chat-toggle" onclick="toggleChat()">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        Pokaż czat
+                    </button>
+                    <button class="focus-btn" onclick="toggleDetails()" id="detailsToggleBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        Ukryj opis
+                    </button>
+                    <button class="fs-btn" onclick="toggleFullScreenLive()" title="Pełny Ekran">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="event-details">
+                <div class="event-title-row">
+                    <div>
+                        <h2 class="event-title">Misja Mars 2030: Q&A z Inżynierem NASA</h2>
+                        <div class="event-speaker" style="margin-bottom: 15px;">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" class="speaker-avatar">
+                            <span>dr. Sarah Jenkins, NASA JPL</span>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <div class="viewers-badge">
+                                <span class="live-dot"></span> LIVE • 4,248 widzów
+                            </div>
+                            <button class="share-educhat-btn" onclick="showToast('Udostępniono link w EduChat!', true)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                Udostępnij w EduChat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interactive-tabs">
+                    <button class="tab-btn active" onclick="switchTab('tab-agenda', this)">Harmonogram</button>
+                    <button class="tab-btn" onclick="switchTab('tab-notes', this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:inline; margin-right:4px; vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        EduNotes
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-ai', this)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline; margin-right:4px; vertical-align:middle; color:var(--ai-color)" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        Asystent AI
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-files', this)">Materiały PDF</button>
+                </div>
+
+                <div id="tab-agenda" class="tab-content active">
+                    <div class="agenda-list">
+                        <div class="agenda-item">
+                            <div class="agenda-time" style="color: var(--text-muted); text-decoration: line-through;">18:00</div>
+                            <div class="agenda-desc" style="opacity: 0.6;">
+                                <h4>Wprowadzenie: Czym jest Misja 2030?</h4>
+                                <p>Krótki przegląd celów i założeń kolonizacji Marsa. Zakończone.</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item current-item">
+                            <div class="agenda-time" style="display: flex; flex-direction: column; gap: 4px;">
+                                <span>18:15</span>
+                                <span style="font-size: 10px; background: var(--accent-color); color: white; padding: 2px 4px; border-radius: 4px; text-align: center;">TERAZ</span>
+                            </div>
+                            <div class="agenda-desc">
+                                <h4>Inżynieria habitatów (Wykład Główny)</h4>
+                                <p>Jak buduje się domy odporne na promieniowanie kosmiczne i burze piaskowe. Prezentacja najnowszych modeli 3D stacji bazowych drukowanych z marsjańskiego regolitu.</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item">
+                            <div class="agenda-time">19:00</div>
+                            <div class="agenda-desc">
+                                <h4>Systemy podtrzymywania życia</h4>
+                                <p>Gospodarka wodna w systemie zamkniętym i uprawa roślin w warunkach mikrograwitacji. Omówienie eksperymentu "GreenHouse Alpha".</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item">
+                            <div class="agenda-time">19:30</div>
+                            <div class="agenda-desc">
+                                <h4>Sesja Q&A na żywo</h4>
+                                <p>Dr. Jenkins odpowie na pytania zadane i wyróżnione przez Was na czacie obok.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-notes" class="tab-content">
+                    <div class="ai-notes-header">
+                        <div>
+                            <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">
+                                ✨ Auto-Notatki AI
+                            </span>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Zwolnij ręce. Sztuczna inteligencja wyłapie najważniejsze wątki i zapisze je za Ciebie.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="aiNotesToggle" onchange="toggleAINotes('aiNotesToggle', 'aiListening', 'liveNotesArea')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="ai-listening-indicator" id="aiListening">
+                        <div class="ai-spinner"></div> EduStream AI analizuje wypowiedź...
+                    </div>
+
+                    <textarea class="live-notes-area" id="liveNotesArea" placeholder="Zacznij pisać tutaj lub włącz Auto-Notatki AI..."></textarea>
+                </div>
+
+                <div id="tab-ai" class="tab-content">
+                    <div class="qa-ai-container">
+                        <div class="qa-ai-header">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            Prywatny Asystent do nauki
+                        </div>
+                        <div class="qa-chat-area" id="studyChatBox">
+                            <div class="a-msg">Czegoś nie rozumiesz w trakcie wykładu? Wpisz tu pojęcie, a wyjaśnię Ci to prostym językiem, bez przerywania transmisji!</div>
+                        </div>
+                        <div class="qa-input-box">
+                            <div class="qa-input-wrapper">
+                                <input type="text" id="studyChatInput" placeholder="Np. Czym jest regolit?..." onkeypress="if(event.key === 'Enter') sendStudyAIMessage()">
+                                <button class="qa-send-btn" onclick="sendStudyAIMessage()">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-files" class="tab-content">
+                    <a class="pdf-card" style="margin-bottom: 15px;">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Prezentacja: Projekty Habitatów 2030</span>
+                            <span class="pdf-size">14 MB • Slajdy używane podczas dzisiejszego wykładu</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                    
+                    <a class="pdf-card">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Raport NASA: Promieniowanie Kosmiczne</span>
+                            <span class="pdf-size">2.1 MB • Artykuł naukowy wspominany przez prelegentkę</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <aside class="chat-column">
+            <div class="chat-header">
+                <span class="chat-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Live Czat 
+                </span>
+                <button class="close-chat-btn" onclick="toggleChat()" title="Ukryj czat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            
+            <div class="chat-messages" id="chatContainer">
+                <div class="msg-box official">
+                    <div class="msg-avatar" style="background: var(--accent-color);">E</div>
+                    <div class="msg-content">
+                        <span class="msg-author">EduStream Moderacja</span>
+                        <span class="msg-text">Witamy na wykładzie! Zachęcamy do dyskusji i zadawania pytań w trybie Q&A! 🚀</span>
+                    </div>
+                </div>
+                <div class="msg-box">
+                    <div class="msg-avatar" style="background: #9c27b0;">K</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Kamil T.</span>
+                        <span class="msg-text">Cześć wszystkim! Oglądacie to dla siebie czy na projekt z fizyki?</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area" id="chatArea">
+                <button class="ask-q-btn" id="askQBtn" onclick="toggleQnAMode()">Zadaj pytanie do sekcji Q&A (Wyróżnione)</button>
+                <div class="chat-input-wrapper" id="chatInputWrapper">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Napisz na czacie..." autocomplete="off">
+                    <button class="send-btn" onclick="sendMessagePublic()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="toast" id="actionToast">
+        <svg viewBox="0 0 24 24" id="toastIcon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+        <span id="toastMsg">Akcja wykonana</span>
+    </div>
+
+    <nav class="fs-sidebar" id="fsSidebar">
+        <button class="fs-icon" onclick="toggleFsPanel('fs-notes')" title="Notatki EduNotes">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </button>
+        <button class="fs-icon" onclick="toggleFsPanel('fs-ai')" title="Asystent AI">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+    </nav>
+
+    <div class="fs-panel" id="fsPanel">
+        <div class="fs-panel-header">
+            <span class="fs-panel-title" id="fsPanelTitle">Tytuł</span>
+            <button class="fs-close-btn" onclick="closeFsPanel()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        
+        <div class="fs-content" id="fs-notes">
+            <div class="ai-notes-header">
+                <div>
+                    <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">✨ Auto-Notatki AI</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="fsAiNotesToggle" onchange="toggleAINotes('fsAiNotesToggle', 'fsAiListening', 'fsLiveNotesArea')">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="ai-listening-indicator" id="fsAiListening">
+                <div class="ai-spinner"></div> AI analizuje audio...
+            </div>
+            <textarea class="fs-notes-area" id="fsLiveNotesArea" placeholder="Zapisz przemyślenia oglądając na pełnym ekranie..."></textarea>
+        </div>
+
+        <div class="fs-content" id="fs-ai">
+            <div class="fs-chat-box" id="fsAiChatBox">
+                <div class="a-msg">Pytaj śmiało, jestem tu żeby pomóc Ci zrozumieć materiał!</div>
+            </div>
+            <div class="qa-input-wrapper">
+                <input type="text" id="fsAiInput" placeholder="Zadaj pytanie AI..." onkeypress="if(event.key === 'Enter') sendFsAiMessage()">
+                <button class="qa-send-btn" onclick="sendFsAiMessage()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MOTYW JASNY / CIEMNY (Ikony Słońce/Księżyc) ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.getAttribute('data-theme') === 'light') {
+                html.setAttribute('data-theme', 'dark');
+                // Księżyc
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                html.setAttribute('data-theme', 'light');
+                // Słońce
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        // --- FULLSCREEN (Rozszerza całe body, pokazując pływający sidebar) ---
+        function toggleFullScreenLive() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if(document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('is-fullscreen');
+            } else {
+                document.body.classList.remove('is-fullscreen');
+                closeFsPanel(); // Zamknij wysunięty panel jak wychodzisz z FS
+            }
+        });
+
+        // --- TOAST NOTIFICATIONS ---
+        let toastTimer;
+        function showToast(message, isSuccess = false) {
+            const toast = document.getElementById('actionToast');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMsg').innerText = message;
+            
+            if (isSuccess) {
+                toast.classList.add('success');
+                icon.innerHTML = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+            } else {
+                toast.classList.remove('success');
+                icon.innerHTML = '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>';
+            }
+
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+
+        // --- FULLSCREEN PANEL LOGIC (Pigułka) ---
+        function toggleFsPanel(tabId) {
+            const isPanelOpen = document.body.classList.contains('fs-panel-open');
+            const clickedIcon = document.querySelector(`.fs-icon[onclick*="${tabId}"]`);
+            
+            if(clickedIcon.classList.contains('active') && isPanelOpen) {
+                closeFsPanel();
+                return;
+            }
+
+            document.body.classList.add('fs-panel-open');
+            document.querySelectorAll('.fs-icon').forEach(i => i.classList.remove('active'));
+            clickedIcon.classList.add('active');
+
+            document.querySelectorAll('.fs-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            if(tabId === 'fs-notes') {
+                document.getElementById('fsPanelTitle').innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> EduNotes';
+            } else {
+                document.getElementById('fsPanelTitle').innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Asystent AI';
+            }
+        }
+
+        function closeFsPanel() {
+            document.body.classList.remove('fs-panel-open');
+            document.querySelectorAll('.fs-icon').forEach(i => i.classList.remove('active'));
+        }
+
+        // --- ASYSTENT AI (Fullscreen) ---
+        function sendFsAiMessage() {
+            const input = document.getElementById('fsAiInput');
+            const chatBox = document.getElementById('fsAiChatBox');
+            const text = input.value.trim();
+            if (text === '') return;
+
+            chatBox.insertAdjacentHTML('beforeend', `<div class="q-msg">${text}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                chatBox.insertAdjacentHTML('beforeend', `<div class="a-msg">Jasne! Chętnie wyjaśnię. Kolonizacja Marsa wymaga stworzenia zamkniętego ekosystemu w celu ochrony przed promieniowaniem.</div>`);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        // --- ASYSTENT AI (Zwykła Zakładka) ---
+        function sendStudyAIMessage() {
+            const input = document.getElementById('studyChatInput');
+            const chatBox = document.getElementById('studyChatBox');
+            const text = input.value.trim();
+            if (text === '') return;
+
+            chatBox.insertAdjacentHTML('beforeend', `<div class="q-msg" style="animation: fadeIn 0.3s ease;">${text}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                chatBox.insertAdjacentHTML('beforeend', `<div class="a-msg" style="animation: fadeIn 0.3s ease;">Oczywiście! Regolit to warstwa luźnej, zwietrzałej skały i pyłu pokrywająca stałą skałę. Na Marsie jest on niezwykle drobny i toksyczny, dlatego izolacja habitatów jest tak ważna.</div>`);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        // --- TRYB SKUPIENIA (Ukrywanie opisów w normalnym widoku) ---
+        function toggleChat() { 
+            const layout = document.getElementById('liveLayout');
+            layout.classList.toggle('chat-hidden'); 
+        }
+        
+        function toggleDetails() {
+            const col = document.getElementById('videoColumn');
+            const btn = document.getElementById('detailsToggleBtn');
+            col.classList.toggle('details-hidden');
+            if(col.classList.contains('details-hidden')) {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> Pokaż opis`;
+            } else {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Ukryj opis`;
+            }
+        }
+
+        // --- ZAKŁADKI NORMALNE (Pod Wideo) ---
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- CZAT PUBLICZNY (Prawa kolumna) ---
+        let isQnAMode = false;
+        function toggleQnAMode() {
+            isQnAMode = !isQnAMode;
+            const chatArea = document.getElementById('chatArea');
+            const btn = document.getElementById('askQBtn');
+            const input = document.getElementById('chatInput');
+            
+            if(isQnAMode) {
+                chatArea.classList.add('qna-mode');
+                btn.innerText = "✕ Anuluj tryb pytania";
+                input.placeholder = "Wpisz swoje pytanie do prelegenta...";
+                input.focus();
+            } else {
+                chatArea.classList.remove('qna-mode');
+                btn.innerText = "Zadaj pytanie do sekcji Q&A (Wyróżnione)";
+                input.placeholder = "Napisz na czacie...";
+            }
+        }
+
+        function sendMessagePublic() {
+            const input = document.getElementById('chatInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const text = input.value.trim();
+            if(text === '') return;
+
+            let msgHTML = '';
+            if(isQnAMode) {
+                msgHTML = `
+                <div class="msg-box qna-msg" style="animation: fadeIn 0.3s ease;">
+                    <div class="msg-avatar" style="background: #ff5722;">Ty</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Michał D.</span>
+                        <div class="msg-text">
+                            <span class="qna-badge">Pytanie Q&A</span><br>
+                            ${text}
+                        </div>
+                    </div>
+                </div>`;
+                toggleQnAMode(); 
+            } else {
+                msgHTML = `
+                <div class="msg-box" style="animation: fadeIn 0.3s ease;">
+                    <div class="msg-avatar" style="background: #ff5722;">Ty</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Michał D.</span>
+                        <span class="msg-text">${text}</span>
+                    </div>
+                </div>`;
+            }
+            
+            chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+            input.value = '';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- INTELIGENTNE NOTATKI AI (Współdzielone dla Normal / FS) ---
+        let aiNoteTimeout;
+        function toggleAINotes(toggleId, indicatorId, textAreaId) {
+            const isChecked = document.getElementById(toggleId).checked;
+            const indicator = document.getElementById(indicatorId);
+            const textarea = document.getElementById(textAreaId);
+            
+            if(isChecked) {
+                indicator.style.display = 'flex';
+                aiNoteTimeout = setTimeout(() => {
+                    const textToType = "\n• [AI] Kolonizacja Marsa wymaga rozwiązań chroniących przed promieniowaniem.\n• [AI] Główne habitaty będą zlokalizowane pod powierzchnią planety z wykorzystaniem regolitu.";
+                    typeWriter(textarea, textToType, 0, toggleId);
+                }, 3000); 
+            } else {
+                indicator.style.display = 'none';
+                clearTimeout(aiNoteTimeout);
+            }
+        }
+
+        function typeWriter(element, text, i, toggleId) {
+            if (!document.getElementById(toggleId).checked) return;
+            
+            if (i < text.length) {
+                element.value += text.charAt(i);
+                element.scrollTop = element.scrollHeight;
+                setTimeout(() => typeWriter(element, text, i + 1, toggleId), 30);
+            }
+        }
+
+        // --- ŻYWY CZAT SYMULACJA ---
+        const chatMessages = [
+            { user: "Janek", text: "Niesamowite te modele 3D!", color: "#4ade80" },
+            { user: "Zosia M.", text: "A co z promieniowaniem słonecznym?", color: "#a855f7" },
+            { user: "Piotrek", text: "Chciałbym tam kiedyś polecieć...", color: "#3b82f6" },
+            { user: "Kasia", text: "Czy ta technologia będzie użyta na Księżycu?", color: "#f59e0b" },
+            { user: "Marek99", text: "Super wykład!", color: "#ef4444" },
+            { user: "Ola", text: "Ile czasu zajmuje lot na Marsa przy obecnej technologii?", color: "#14b8a6" }
+        ];
+
+        function simulateLiveChat() {
+            const chatContainer = document.getElementById('chatContainer');
+            setInterval(() => {
+                const randomMsg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+                const msgHTML = `
+                <div class="msg-box" style="animation: fadeIn 0.3s ease;">
+                    <div class="msg-avatar" style="background: ${randomMsg.color};">${randomMsg.user.charAt(0)}</div>
+                    <div class="msg-content">
+                        <span class="msg-author">${randomMsg.user}</span>
+                        <span class="msg-text">${randomMsg.text}</span>
+                    </div>
+                </div>`;
+                chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 4500); 
+        }
+
+        document.addEventListener('DOMContentLoaded', simulateLiveChat);
+
+    </script>
+</body>
+</html>

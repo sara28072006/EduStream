@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream Live - Misja Mars 2030</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+        :root {
+            /* Akcenty stałe */
+            --accent-color: #0A84FF;
+            --live-red: #FF3B30;
+            --warning-color: #FF9F0A; 
+            
+            /* AI Premium Gradient: Szaro-Fioletowo-Niebieski */
+            --ai-gradient: linear-gradient(135deg, #64748b, #8b5cf6, #3b82f6);
+            --ai-color: #8b5cf6;
+            --ai-bg: rgba(139, 92, 246, 0.12);
+            --ai-border: rgba(139, 92, 246, 0.3);
+
+            /* Zmienne dla motywu CIEMNEGO */
+            --bg-base: #000000;
+            --bg-panel: #0a0a0a;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --input-bg: rgba(255,255,255,0.05);
+            --nav-bg: rgba(10, 10, 10, 0.4); /* Półprzezroczysty, szklany */
+        }
+
+        /* Zmienne dla motywu JASNEGO (Apple Style) */
+        html[data-theme="light"] {
+            --bg-base: #f5f5f7;
+            --bg-panel: #ffffff;
+            --text-main: #1d1d1f;
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --glass-bg: rgba(0, 0, 0, 0.03);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-hover: rgba(0, 0, 0, 0.06);
+            --input-bg: rgba(0,0,0,0.03);
+            --nav-bg: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; background-color: var(--bg-base); color: var(--text-main);
+            height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* --- AMBIENT BACKGROUND (Aby nie było czarnego ekranu!) --- */
+        .ambient-blob { position: fixed; border-radius: 50%; filter: blur(120px); z-index: -1; opacity: 0.35; animation: float 20s infinite ease-in-out alternate; transition: background 0.5s ease;}
+        .blob-1 { width: 500px; height: 500px; background: #2E0A59; top: -10%; left: -10%; }
+        .blob-2 { width: 600px; height: 600px; background: #3b0000; bottom: -20%; right: -10%; animation-delay: -10s; }
+        
+        html[data-theme="light"] .blob-1 { background: #e0f2fe; } 
+        html[data-theme="light"] .blob-2 { background: #f3e8ff; } 
+        
+        @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, 50px) scale(1.1); } }
+
+
+        /* --- SZKLANY, PRZEZROCZYSTY NAVBAR --- */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 5px 30px; /* Zmniejszony pasek */
+            background: var(--nav-bg); border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            z-index: 100; transition: background 0.4s ease;
+            position: absolute; width: 100%; top: 0; left: 0;
+        }
+        
+        .nav-left { display: flex; align-items: center; gap: 30px; }
+        
+        .back-btn-small {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            display: flex; justify-content: center; align-items: center; color: var(--text-main);
+            transition: 0.3s; text-decoration: none; backdrop-filter: blur(10px);
+        }
+        .back-btn-small:hover { background: var(--glass-hover); transform: scale(1.05); }
+
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px;}
+        .logo-img { width: 265px; height: auto; display: block; transition: 0.4s; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));}
+        html[data-theme="light"] .logo-img { filter: drop-shadow(0 2px 10px rgba(0,0,0,0.1)) invert(1) hue-rotate(180deg); }
+        
+        .nav-links { display: flex; align-items: center; gap: 20px; margin-left: 10px;}
+        .nav-link { position: relative; color: var(--text-main); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.3s; display: flex; align-items: center; gap: 6px; text-shadow: 0 2px 8px rgba(0,0,0,0.5); opacity: 0.9;}
+        html[data-theme="light"] .nav-link { text-shadow: none; font-weight: 600; }
+        .nav-link:hover { opacity: 1; }
+        .nav-link.active { font-weight: 700; opacity: 1; }
+
+        .live-dot { width: 6px; height: 6px; background-color: var(--live-red); border-radius: 50%; box-shadow: 0 0 8px var(--live-red); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7); } 70% { box-shadow: 0 0 0 5px rgba(255, 59, 48, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); } }
+        
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+
+        .theme-toggle-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+            color: var(--text-main); width: 34px; height: 34px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;
+        }
+        .theme-toggle-btn:hover { color: var(--accent-color); background: var(--glass-hover); border-color: var(--accent-color); }
+        .theme-toggle-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .user-profile-link { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-main); padding: 4px 10px 4px 4px; border-radius: 30px; transition: 0.3s; background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(10px);}
+        .user-profile-link:hover { background: var(--glass-hover); }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+
+
+        /* --- MAIN LAYOUT --- */
+        .live-layout { display: flex; height: 100vh; width: 100%; overflow: hidden; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* --- LEWA KOLUMNA: WIDEO & ZAKŁADKI --- */
+        .video-column { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; background: transparent; position: relative; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .video-column::-webkit-scrollbar { width: 6px; }
+        .video-column::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+
+        .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; transition: all 0.4s ease; padding-top: 60px; /* Offset na navbar by wideo nie chowało się całe pod nim */ }
+        
+        .video-column.details-hidden .player-wrapper { flex-grow: 1; aspect-ratio: auto; border-bottom: none; }
+        .video-column.details-hidden .event-details { display: none; }
+        
+        .player-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; filter: blur(5px); transform: scale(1.05); transition: 0.8s ease;}
+        html[data-theme="light"] .player-bg { opacity: 0.8; }
+
+        .waiting-content { position: relative; z-index: 10; text-align: center; display: flex; flex-direction: column; align-items: center; color: white; transition: 0.5s ease;}
+        .waiting-title { font-size: 32px; font-weight: 800; margin-bottom: 10px; text-shadow: 0 4px 20px rgba(0,0,0,0.8); }
+        .waiting-subtitle { font-size: 16px; color: rgba(255,255,255,0.8); margin-bottom: 30px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        
+        .countdown { display: flex; gap: 15px; }
+        .time-box { background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); padding: 15px 20px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; min-width: 90px; }
+        .time-val { font-size: 36px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent-color); }
+        .time-label { font-size: 11px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
+
+        /* KONTROLKI NA WIDEO (Prawy Dolny Róg) */
+        .bottom-right-controls { position: absolute; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 50; }
+        .bottom-right-controls > * { pointer-events: auto; }
+        
+        .focus-btn { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.3s; font-family: inherit; }
+        .focus-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        
+        .fs-btn { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .fs-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.1); }
+
+        /* Styl dla prawdziwego Fullscreena */
+        body.is-fullscreen .navbar { display: none; }
+        body.is-fullscreen .video-column { width: 100%; height: 100vh; padding-top: 0; background: #000; }
+        body.is-fullscreen .player-wrapper { height: 100vh; aspect-ratio: auto; padding-top: 0;}
+        body.is-fullscreen .event-details { display: none; }
+        body.is-fullscreen .chat-column { display: none; }
+
+        /* Szczegóły pod wideo */
+        .event-details { padding: 30px 40px; background: var(--bg-base); }
+        .event-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; }
+        .event-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .event-speaker { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 14px; }
+        .speaker-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+
+        /* Zakładki */
+        .interactive-tabs { display: flex; gap: 30px; border-bottom: 1px solid var(--glass-border); margin-bottom: 30px; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 14px; font-weight: 600; padding-bottom: 15px; cursor: pointer; position: relative; transition: 0.3s; font-family: inherit; }
+        .tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { color: var(--text-main); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--accent-color); border-radius: 3px 3px 0 0; }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Harmonogram */
+        .agenda-list { display: flex; flex-direction: column; gap: 15px; }
+        .agenda-item { display: flex; gap: 20px; background: var(--glass-bg); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--glass-border); }
+        .agenda-time { font-weight: 700; color: var(--accent-color); font-size: 15px; min-width: 60px; }
+        .agenda-desc h4 { font-size: 15px; margin-bottom: 4px; color: var(--text-main);}
+        .agenda-desc p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+        /* --- NOTATNIK --- */
+        .ai-notes-header { display: flex; justify-content: space-between; align-items: center; background: rgba(10, 132, 255, 0.05); border: 1px solid rgba(10, 132, 255, 0.2); padding: 15px 20px; border-radius: 12px; margin-bottom: 15px; }
+        .ai-listening-indicator { display: none; align-items: center; gap: 8px; color: var(--accent-color); font-size: 12px; font-weight: 600; margin-bottom: 10px; animation: fadeIn 0.3s ease;}
+        .ai-spinner { width: 14px; height: 14px; border: 2px solid rgba(10, 132, 255, 0.3); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--glass-border); transition: .4s; border-radius: 24px; border: 1px solid var(--glass-border); }
+        .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: white; transition: .4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .toggle-slider { background-color: var(--accent-color); border-color: var(--accent-color); }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+        .live-notes-area { width: 100%; height: 250px; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; color: var(--text-main); font-family: inherit; font-size: 14px; resize: none; outline: none; line-height: 1.6; transition: 0.3s; }
+        .live-notes-area:focus { border-color: var(--accent-color); background: rgba(10, 132, 255, 0.05); }
+
+        /* --- ASYSTENT AI W ZAKŁADCE (Czarno-Biały + Gradient) --- */
+        .qa-ai-container { background: var(--bg-panel); border: 1px solid var(--glass-border); border-radius: 16px; display: flex; flex-direction: column; height: 350px; overflow: hidden; }
+        .qa-ai-header { background: var(--glass-bg); padding: 12px 20px; font-size: 13px; font-weight: 700; border-bottom: 1px solid var(--glass-border); display: flex; align-items: center; gap: 8px;}
+        .qa-ai-header svg { color: var(--ai-color); }
+        
+        .qa-chat-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .qa-chat-area::-webkit-scrollbar { width: 4px; }
+        .qa-chat-area::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        
+        /* Chmurka Użytkownika (Niebiesko-Fioletowy Gradient) */
+        .q-msg { 
+            background: var(--ai-gradient); color: white; border: none;
+            padding: 10px 14px; border-radius: 12px 12px 0 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; align-self: flex-end; 
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+        }
+        /* Chmurka AI (Czarno-Biały styl) */
+        .a-msg { 
+            background: var(--input-bg); border: 1px solid var(--glass-border); color: var(--text-main); 
+            padding: 10px 14px; border-radius: 12px 12px 12px 0; font-size: 13.5px; line-height: 1.5; max-width: 85%; align-self: flex-start; 
+        }
+        
+        .qa-input-box { display: flex; padding: 15px; border-top: 1px solid var(--glass-border); background: transparent;}
+        .qa-input-wrapper { display: flex; flex-grow: 1; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 24px; padding: 5px 5px 5px 15px; align-items: center; transition: 0.3s; }
+        .qa-input-wrapper:focus-within { border-color: var(--ai-color); }
+        .qa-input-wrapper input { flex-grow: 1; background: transparent; border: none; color: var(--text-main); outline: none; font-size: 13.5px; font-family: inherit;}
+        .qa-send-btn { background: var(--text-main); border: none; width: 34px; height: 34px; border-radius: 50%; color: var(--bg-base); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;}
+        .qa-send-btn:hover { transform: scale(1.05); }
+
+        /* Karty PDF */
+        .pdf-card { 
+            display: flex; align-items: center; gap: 15px; background: var(--input-bg); 
+            border: 1px solid var(--glass-border); padding: 12px 15px; border-radius: 12px; 
+            text-decoration: none; color: var(--text-main); transition: 0.3s; margin-bottom: 10px; cursor: pointer;
+        }
+        .pdf-card:hover { background: var(--glass-hover); border-color: var(--accent-color); transform: translateY(-2px);}
+        .pdf-icon { background: var(--live-red); color: white; font-size: 11px; font-weight: 800; padding: 6px 10px; border-radius: 8px;}
+        .pdf-info { display: flex; flex-direction: column; flex-grow: 1; }
+        .pdf-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; color: var(--text-main);}
+        .pdf-size { font-size: 11px; color: var(--text-muted); }
+
+
+        /* --- PRAWA KOLUMNA: CZAT PUBLICZNY--- */
+        .chat-column { width: 380px; flex-shrink: 0; background: var(--bg-panel); border-left: 1px solid var(--glass-border); display: flex; flex-direction: column; height: 100%; transition: margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s; padding-top: 70px; }
+        .live-layout.chat-hidden .chat-column { margin-right: -380px; opacity: 0; pointer-events: none; }
+
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;}
+        .close-chat-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.3s; display: flex; align-items: center;}
+        .close-chat-btn:hover { color: var(--text-main); transform: scale(1.1); }
+
+        .chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .msg-box { display: flex; gap: 12px; }
+        .msg-avatar { width: 28px; height: 28px; border-radius: 50%; background: #333; display: flex; justify-content: center; align-items: center; font-size: 11px; font-weight: bold; color: white; flex-shrink: 0;}
+        .msg-content { display: flex; flex-direction: column; gap: 4px; }
+        .msg-author { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .msg-text { font-size: 13.5px; line-height: 1.4; color: var(--text-main); opacity: 0.9;}
+        .msg-box.official .msg-author { color: var(--accent-color); }
+        .msg-box.official .msg-text { background: rgba(10, 132, 255, 0.1); padding: 8px 12px; border-radius: 0 12px 12px 12px; border: 1px solid rgba(10, 132, 255, 0.2); }
+        
+        .msg-box.qna-msg .msg-text { background: rgba(255, 159, 10, 0.15); border: 1px solid rgba(255, 159, 10, 0.4); border-radius: 0 12px 12px 12px; color: var(--text-main); padding: 10px 12px;}
+        .qna-badge { display: inline-block; background: var(--warning-color); color: black; font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+
+        /* Input czatu publicznego */
+        .chat-input-area { padding: 20px; border-top: 1px solid var(--glass-border); background: var(--bg-panel); transition: 0.3s; }
+        .chat-input-wrapper { display: flex; background: var(--input-bg); border: 1px solid var(--glass-border); border-radius: 20px; padding: 5px; transition: 0.3s; }
+        .chat-input-wrapper:focus-within { border-color: var(--accent-color); }
+        .chat-input { flex-grow: 1; background: transparent; border: none; color: var(--text-main); padding: 10px 15px; font-size: 14px; outline: none; font-family: inherit; }
+        .chat-input::placeholder { color: var(--text-muted); transition: 0.3s; }
+        .send-btn { background: var(--accent-color); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; transition: 0.3s; }
+        .send-btn:hover { transform: scale(1.05); background: var(--accent-hover); }
+
+        .ask-q-btn { width: 100%; background: transparent; border: 1px dashed rgba(255,255,255,0.2); color: var(--text-muted); padding: 10px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; font-size: 12px; transition: 0.3s; font-weight: 600;}
+        html[data-theme="light"] .ask-q-btn { border-color: rgba(0,0,0,0.2); }
+        .ask-q-btn:hover { background: var(--glass-hover); color: var(--text-main); border-color: var(--text-muted); }
+        
+        .chat-input-area.qna-mode .chat-input-wrapper { border-color: var(--warning-color); background: rgba(255, 159, 10, 0.05); box-shadow: 0 4px 15px rgba(255, 159, 10, 0.1); }
+        .chat-input-area.qna-mode .chat-input::placeholder { color: rgba(255, 159, 10, 0.6); }
+        .chat-input-area.qna-mode .send-btn { background: var(--warning-color); color: black; }
+        .chat-input-area.qna-mode .ask-q-btn { background: rgba(255, 159, 10, 0.15); border-color: var(--warning-color); color: var(--warning-color); border-style: solid; }
+
+        /* --- FULLSCREEN PŁYWAJĄCY SIDEBAR & PANELE (PIGUŁKA) --- */
+        .fs-sidebar {
+            position: fixed; right: 20px; top: 50%; transform: translateY(-50%);
+            background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 40px; /* Pigułka */
+            padding: 15px 10px; display: flex; flex-direction: column; gap: 15px;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        html[data-theme="light"] .fs-sidebar { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); }
+        body.is-fullscreen .fs-sidebar { opacity: 1; pointer-events: auto; }
+        body.is-fullscreen.fs-panel-open .fs-sidebar { right: 440px; } /* Odsuwa pigułkę, gdy panel jest otwarty */
+
+        .fs-icon {
+            width: 44px; height: 44px; border-radius: 50%; background: transparent; border: 1px solid transparent;
+            color: var(--text-muted); cursor: pointer; transition: 0.3s; display: flex; justify-content: center; align-items: center;
+        }
+        .fs-icon:hover { background: var(--glass-hover); color: var(--text-main); transform: scale(1.1); }
+        .fs-icon.active { background: var(--ai-bg); border-color: var(--ai-border); color: var(--ai-color); }
+        .fs-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;}
+
+        /* Pływający Panel w Fullscreen (Pigułka) */
+        .fs-panel {
+            position: fixed; right: -420px; top: 20px; bottom: 20px; width: 400px;
+            background: rgba(15,15,15,0.95); backdrop-filter: blur(30px);
+            border: 1px solid rgba(255,255,255,0.1); z-index: 9998;
+            border-radius: 30px; 
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; padding-top: 10px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        html[data-theme="light"] .fs-panel { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.15);}
+        body.is-fullscreen.fs-panel-open .fs-panel { right: 20px; }
+
+        .fs-panel-header { padding: 15px 25px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
+        .fs-panel-title { font-weight: 700; font-size: 16px; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
+        .fs-close-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); width: 32px; height: 32px; border-radius: 50%; color: var(--text-muted); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s;}
+        .fs-close-btn:hover { color: var(--text-main); background: var(--glass-hover); transform: rotate(90deg); }
+
+        .fs-content { flex-grow: 1; display: none; flex-direction: column; overflow-y: auto; padding: 25px; animation: fadeIn 0.3s ease;}
+        .fs-content.active { display: flex; }
+
+        /* Fs Note */
+        .fs-notes-area { flex-grow: 1; background: transparent; border: none; color: var(--text-main); outline: none; font-family: inherit; font-size: 14px; line-height: 1.6; resize: none; margin-top: 15px;}
+        .fs-notes-area::placeholder { color: var(--text-muted); }
+        
+        /* Fs Chat */
+        .fs-chat-box { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;}
+        
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="livewydarzenia.html" class="back-btn-small" title="Wróć do wydarzeń">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </a>
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+            
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Strona Główna</a>
+                <a href="kategorie.html" class="nav-link">Kategorie</a>
+                <a href="watchlist.html" class="nav-link">Moja Lista</a>
+                <a href="livewydarzenia.html" class="nav-link active">
+                    Live <span class="live-dot"></span>
+                </a>
+            </nav>
+        </div>
+        
+        <div class="nav-right">
+            <button class="theme-toggle-btn" onclick="toggleTheme()" title="Zmień motyw jasny/ciemny">
+                <svg id="themeIcon" viewBox="0 0 24 24">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+            </button>
+            
+            <a href="settings.html" class="user-profile-link" title="Ustawienia">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <span style="font-size: 13px; font-weight: 500; margin-right: 5px;">Michał D.</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="live-layout" id="liveLayout">
+        
+        <div class="video-column" id="videoColumn">
+            
+            <div class="player-wrapper">
+                
+                <video id="actualLiveVideo" src="https://www.w3schools.com/html/mov_bbb.mp4" loop muted playsinline style="position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; opacity: 0; transition: opacity 1s; z-index: 1;"></video>
+
+                <div class="bottom-right-controls">
+                    <button class="focus-btn" onclick="toggleDetails()" id="detailsToggleBtn">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        Ukryj opis
+                    </button>
+                    <button class="fs-btn" onclick="toggleFullScreenLive()" title="Pełny Ekran">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                    </button>
+                </div>
+
+                <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop" class="player-bg" id="waitingBg" alt="Mars Background">
+                <div class="waiting-content" id="waitingContent">
+                    <h1 class="waiting-title">Zaraz zaczynamy!</h1>
+                    <p class="waiting-subtitle">Misja Mars 2030: Q&A z Inżynierem NASA</p>
+                    
+                    <div class="countdown" id="live-countdown">
+                        <div class="time-box"><span class="time-val" id="cd-m">00</span><span class="time-label">Minut</span></div>
+                        <div class="time-box"><span class="time-val" id="cd-s">10</span><span class="time-label">Sekund</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="event-details">
+                <div class="event-title-row">
+                    <div>
+                        <h2 class="event-title">Misja Mars 2030: Q&A z Inżynierem NASA</h2>
+                        <div class="event-speaker">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop" class="speaker-avatar">
+                            <span>dr. Sarah Jenkins, NASA JPL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="interactive-tabs">
+                    <button class="tab-btn active" onclick="switchTab('tab-agenda', this)">Harmonogram</button>
+                    <button class="tab-btn" onclick="switchTab('tab-notes', this)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="display:inline; margin-right:4px; vertical-align:middle;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                        EduNotes
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-ai', this)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" style="display:inline; margin-right:4px; vertical-align:middle; color:var(--ai-color)" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        Asystent AI
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('tab-files', this)">Materiały PDF</button>
+                </div>
+
+                <div id="tab-agenda" class="tab-content active">
+                    <div class="agenda-list">
+                        <div class="agenda-item">
+                            <div class="agenda-time">18:00</div>
+                            <div class="agenda-desc">
+                                <h4>Wprowadzenie: Czym jest Misja 2030?</h4>
+                                <p>Krótki przegląd celów i założeń kolonizacji Marsa. Opowiemy o współpracy między narodowymi agencjami kosmicznymi a sektorem prywatnym.</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item" style="border-color: var(--accent-color); background: rgba(10, 132, 255, 0.05);">
+                            <div class="agenda-time" style="display: flex; flex-direction: column; gap: 4px;">
+                                <span>18:15</span>
+                                <span style="font-size: 10px; background: var(--accent-color); color: white; padding: 2px 4px; border-radius: 4px; text-align: center;">TERAZ</span>
+                            </div>
+                            <div class="agenda-desc">
+                                <h4>Inżynieria habitatów (Wykład Główny)</h4>
+                                <p>Jak buduje się domy odporne na promieniowanie kosmiczne i burze piaskowe. Prezentacja najnowszych modeli 3D stacji bazowych drukowanych z marsjańskiego regolitu.</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item">
+                            <div class="agenda-time">19:00</div>
+                            <div class="agenda-desc">
+                                <h4>Systemy podtrzymywania życia</h4>
+                                <p>Gospodarka wodna w systemie zamkniętym i uprawa roślin w warunkach mikrograwitacji. Omówienie eksperymentu "GreenHouse Alpha".</p>
+                            </div>
+                        </div>
+                        <div class="agenda-item">
+                            <div class="agenda-time">19:30</div>
+                            <div class="agenda-desc">
+                                <h4>Sesja Q&A na żywo</h4>
+                                <p>Dr. Jenkins odpowie na pytania zadane i wyróżnione przez Was na czacie obok.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-notes" class="tab-content">
+                    <div class="ai-notes-header">
+                        <div>
+                            <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">
+                                ✨ Auto-Notatki AI
+                            </span>
+                            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Zwolnij ręce. Sztuczna inteligencja wyłapie najważniejsze wątki i zapisze je za Ciebie.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="aiNotesToggle" onchange="toggleAINotes('aiNotesToggle', 'aiListening', 'liveNotesArea')">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="ai-listening-indicator" id="aiListening">
+                        <div class="ai-spinner"></div> EduStream AI analizuje wypowiedź...
+                    </div>
+
+                    <textarea class="live-notes-area" id="liveNotesArea" placeholder="Zacznij pisać tutaj lub włącz Auto-Notatki AI..."></textarea>
+                </div>
+
+                <div id="tab-ai" class="tab-content">
+                    <div class="qa-ai-container">
+                        <div class="qa-ai-header">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                            Prywatny Asystent do nauki
+                        </div>
+                        <div class="qa-chat-area" id="studyChatBox">
+                            <div class="a-msg">Czegoś nie rozumiesz w trakcie wykładu? Wpisz tu pojęcie, a wyjaśnię Ci to prostym językiem, bez przerywania transmisji!</div>
+                        </div>
+                        <div class="qa-input-box">
+                            <div class="qa-input-wrapper">
+                                <input type="text" id="studyChatInput" placeholder="Np. Czym jest regolit?..." onkeypress="if(event.key === 'Enter') sendStudyAIMessage()">
+                                <button class="qa-send-btn" onclick="sendStudyAIMessage()">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-files" class="tab-content">
+                    <a class="pdf-card" style="margin-bottom: 15px;">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Prezentacja: Projekty Habitatów 2030</span>
+                            <span class="pdf-size">14 MB • Slajdy używane podczas dzisiejszego wykładu</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                    
+                    <a class="pdf-card">
+                        <div class="pdf-icon">PDF</div>
+                        <div class="pdf-info">
+                            <span class="pdf-title">Raport NASA: Promieniowanie Kosmiczne</span>
+                            <span class="pdf-size">2.1 MB • Artykuł naukowy wspominany przez prelegentkę</span>
+                        </div>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <aside class="chat-column">
+            <div class="chat-header">
+                <span class="chat-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    Live Czat 
+                </span>
+                <button class="close-chat-btn" onclick="toggleChat()" title="Ukryj czat">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            
+            <div class="chat-messages" id="chatContainer">
+                <div class="msg-box official">
+                    <div class="msg-avatar" style="background: var(--accent-color);">E</div>
+                    <div class="msg-content">
+                        <span class="msg-author">EduStream Moderacja</span>
+                        <span class="msg-text">Witajcie w poczekalni! Wykład rozpocznie się punktualnie. Przygotujcie pytania do sesji Q&A! 🚀</span>
+                    </div>
+                </div>
+                <div class="msg-box">
+                    <div class="msg-avatar" style="background: #9c27b0;">K</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Kamil T.</span>
+                        <span class="msg-text">Cześć wszystkim! Oglądacie to dla siebie czy na projekt z fizyki?</span>
+                    </div>
+                </div>
+                <div class="msg-box">
+                    <div class="msg-avatar" style="background: #4ade80; color: black;">A</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Ania W.</span>
+                        <span class="msg-text">Dla siebie! Interesuję się inżynierią kosmiczną :)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-area" id="chatArea">
+                <button class="ask-q-btn" id="askQBtn" onclick="toggleQnAMode()">Zadaj pytanie do sekcji Q&A (Wyróżnione)</button>
+                <div class="chat-input-wrapper" id="chatInputWrapper">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Napisz na czacie..." autocomplete="off">
+                    <button class="send-btn" onclick="sendMessagePublic()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <nav class="fs-sidebar" id="fsSidebar">
+        <button class="fs-icon" onclick="toggleFsPanel('fs-notes')" title="Notatki EduNotes">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        </button>
+        <button class="fs-icon" onclick="toggleFsPanel('fs-ai')" title="Asystent AI">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        </button>
+    </nav>
+
+    <div class="fs-panel" id="fsPanel">
+        <div class="fs-panel-header">
+            <span class="fs-panel-title" id="fsPanelTitle">Tytuł</span>
+            <button class="fs-close-btn" onclick="closeFsPanel()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        
+        <div class="fs-content" id="fs-notes">
+            <div class="ai-notes-header">
+                <div>
+                    <span style="font-weight:600; font-size:14px; display:flex; align-items:center; gap:6px; color: var(--accent-color);">✨ Auto-Notatki AI</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="fsAiNotesToggle" onchange="toggleAINotes('fsAiNotesToggle', 'fsAiListening', 'fsLiveNotesArea')">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="ai-listening-indicator" id="fsAiListening">
+                <div class="ai-spinner"></div> AI analizuje audio...
+            </div>
+            <textarea class="fs-notes-area" id="fsLiveNotesArea" placeholder="Zapisz przemyślenia oglądając na pełnym ekranie..."></textarea>
+        </div>
+
+        <div class="fs-content" id="fs-ai">
+            <div class="fs-chat-box" id="fsAiChatBox">
+                <div class="a-msg">Pytaj śmiało, jestem tu żeby pomóc Ci zrozumieć materiał!</div>
+            </div>
+            <div class="qa-input-wrapper">
+                <input type="text" id="fsAiInput" placeholder="Zadaj pytanie AI..." onkeypress="if(event.key === 'Enter') sendFsAiMessage()">
+                <button class="qa-send-btn" onclick="sendFsAiMessage()"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MOTYW JASNY / CIEMNY (Ikony Słońce/Księżyc) ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('themeIcon');
+            if (html.getAttribute('data-theme') === 'light') {
+                html.setAttribute('data-theme', 'dark');
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            } else {
+                html.setAttribute('data-theme', 'light');
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            }
+        }
+
+        // --- FULLSCREEN (Rozszerza całe body, pokazując pływający sidebar) ---
+        function toggleFullScreenLive() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if(document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                document.body.classList.add('is-fullscreen');
+            } else {
+                document.body.classList.remove('is-fullscreen');
+                closeFsPanel(); // Zamknij wysunięty panel jak wychodzisz z FS
+            }
+        });
+
+        // --- FULLSCREEN PANEL LOGIC (Pigułka) ---
+        function toggleFsPanel(tabId) {
+            const isPanelOpen = document.body.classList.contains('fs-panel-open');
+            const clickedIcon = document.querySelector(`.fs-icon[onclick*="${tabId}"]`);
+            
+            if(clickedIcon.classList.contains('active') && isPanelOpen) {
+                closeFsPanel();
+                return;
+            }
+
+            document.body.classList.add('fs-panel-open');
+            document.querySelectorAll('.fs-icon').forEach(i => i.classList.remove('active'));
+            clickedIcon.classList.add('active');
+
+            document.querySelectorAll('.fs-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+
+            if(tabId === 'fs-notes') {
+                document.getElementById('fsPanelTitle').innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg> EduNotes';
+            } else {
+                document.getElementById('fsPanelTitle').innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> Asystent AI';
+            }
+        }
+
+        function closeFsPanel() {
+            document.body.classList.remove('fs-panel-open');
+            document.querySelectorAll('.fs-icon').forEach(i => i.classList.remove('active'));
+        }
+
+        // --- ASYSTENT AI (Fullscreen) ---
+        function sendFsAiMessage() {
+            const input = document.getElementById('fsAiInput');
+            const chatBox = document.getElementById('fsAiChatBox');
+            const text = input.value.trim();
+            if (text === '') return;
+
+            chatBox.insertAdjacentHTML('beforeend', `<div class="q-msg">${text}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                chatBox.insertAdjacentHTML('beforeend', `<div class="a-msg">Jasne! Chętnie wyjaśnię. Kolonizacja Marsa wymaga stworzenia zamkniętego ekosystemu w celu ochrony przed promieniowaniem.</div>`);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        // --- ASYSTENT AI (Zwykła Zakładka) ---
+        function sendStudyAIMessage() {
+            const input = document.getElementById('studyChatInput');
+            const chatBox = document.getElementById('studyChatBox');
+            const text = input.value.trim();
+            if (text === '') return;
+
+            chatBox.insertAdjacentHTML('beforeend', `<div class="q-msg" style="animation: fadeIn 0.3s ease;">${text}</div>`);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                chatBox.insertAdjacentHTML('beforeend', `<div class="a-msg" style="animation: fadeIn 0.3s ease;">Oczywiście! Regolit to warstwa luźnej, zwietrzałej skały i pyłu pokrywająca stałą skałę. Na Marsie jest on niezwykle drobny i toksyczny, dlatego izolacja habitatów jest tak ważna.</div>`);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        // --- TRYB SKUPIENIA (Ukrywanie opisów) ---
+        function toggleChat() { document.getElementById('liveLayout').classList.toggle('chat-hidden'); }
+        function toggleDetails() {
+            const col = document.getElementById('videoColumn');
+            const btn = document.getElementById('detailsToggleBtn');
+            col.classList.toggle('details-hidden');
+            if(col.classList.contains('details-hidden')) {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg> Pokaż opis`;
+            } else {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg> Ukryj opis`;
+            }
+        }
+
+        // --- ZAKŁADKI NORMALNE (Pod Wideo) ---
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // --- CZAT PUBLICZNY (Prawa kolumna) ---
+        let isQnAMode = false;
+        function toggleQnAMode() {
+            isQnAMode = !isQnAMode;
+            const chatArea = document.getElementById('chatArea');
+            const btn = document.getElementById('askQBtn');
+            const input = document.getElementById('chatInput');
+            
+            if(isQnAMode) {
+                chatArea.classList.add('qna-mode');
+                btn.innerText = "✕ Anuluj tryb pytania";
+                input.placeholder = "Wpisz swoje pytanie do prelegenta...";
+                input.focus();
+            } else {
+                chatArea.classList.remove('qna-mode');
+                btn.innerText = "Zadaj pytanie do sekcji Q&A (Wyróżnione)";
+                input.placeholder = "Napisz na czacie...";
+            }
+        }
+
+        function sendMessagePublic() {
+            const input = document.getElementById('chatInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const text = input.value.trim();
+            if(text === '') return;
+
+            let msgHTML = '';
+            if(isQnAMode) {
+                msgHTML = `
+                <div class="msg-box qna-msg" style="animation: fadeIn 0.3s ease;">
+                    <div class="msg-avatar" style="background: #ff5722;">Ty</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Michał D.</span>
+                        <div class="msg-text">
+                            <span class="qna-badge">Pytanie Q&A</span><br>
+                            ${text}
+                        </div>
+                    </div>
+                </div>`;
+                toggleQnAMode(); 
+            } else {
+                msgHTML = `
+                <div class="msg-box" style="animation: fadeIn 0.3s ease;">
+                    <div class="msg-avatar" style="background: #ff5722;">Ty</div>
+                    <div class="msg-content">
+                        <span class="msg-author">Michał D.</span>
+                        <span class="msg-text">${text}</span>
+                    </div>
+                </div>`;
+            }
+            
+            chatContainer.insertAdjacentHTML('beforeend', msgHTML);
+            input.value = '';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // --- INTELIGENTNE NOTATKI AI (Współdzielone dla Normal / FS) ---
+        let aiNoteTimeout;
+        function toggleAINotes(toggleId, indicatorId, textAreaId) {
+            const isChecked = document.getElementById(toggleId).checked;
+            const indicator = document.getElementById(indicatorId);
+            const textarea = document.getElementById(textAreaId);
+            
+            if(isChecked) {
+                indicator.style.display = 'flex';
+                aiNoteTimeout = setTimeout(() => {
+                    const textToType = "\n• [AI] Kolonizacja Marsa wymaga rozwiązań chroniących przed promieniowaniem.\n• [AI] Główne habitaty będą zlokalizowane pod powierzchnią planety z wykorzystaniem regolitu.";
+                    typeWriter(textarea, textToType, 0, toggleId);
+                }, 3000); 
+            } else {
+                indicator.style.display = 'none';
+                clearTimeout(aiNoteTimeout);
+            }
+        }
+
+        function typeWriter(element, text, i, toggleId) {
+            if (!document.getElementById(toggleId).checked) return;
+            
+            if (i < text.length) {
+                element.value += text.charAt(i);
+                element.scrollTop = element.scrollHeight;
+                setTimeout(() => typeWriter(element, text, i + 1, toggleId), 30);
+            }
+        }
+
+        // --- ODLICZANIE W POCZEKALNI I ODPALENIE WIDEO ---
+        function startCountdown() {
+            let m = 0; let s = 10; // Czas skrócony dla demonstracji
+            const minEl = document.getElementById('cd-m');
+            const secEl = document.getElementById('cd-s');
+
+            const timer = setInterval(() => {
+                if (s === 0 && m === 0) {
+                    document.querySelector('.waiting-title').innerText = "Transmisja Rozpoczęta!";
+                    document.querySelector('.waiting-subtitle').innerText = "Łączenie z sygnałem...";
+                    document.getElementById('live-countdown').style.display = 'none';
+                    
+                    setTimeout(() => {
+                        const content = document.getElementById('waitingContent');
+                        const bg = document.getElementById('waitingBg');
+                        const video = document.getElementById('actualLiveVideo');
+                        
+                        content.style.opacity = '0';
+                        bg.style.opacity = '0';
+                        
+                        video.style.opacity = '1';
+                        video.play();
+                        
+                        setTimeout(() => {
+                            content.style.display = 'none';
+                            bg.style.display = 'none';
+                        }, 1000);
+                    }, 2000);
+
+                    clearInterval(timer);
+                    return;
+                }
+                if (s === 0) { m--; s = 59; } else { s--; }
+                minEl.innerText = m < 10 ? '0' + m : m;
+                secEl.innerText = s < 10 ? '0' + s : s;
+            }, 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', startCountdown);
+    </script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Ustawienia (Domyślne)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :root {
+            --bg-base: #000000;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --accent-color: #0A84FF;
+            --focus-color: #34C759; 
+            --toggle-on: #34C759; 
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; position: relative;
+        }
+
+        /* --- AMBIENT BACKGROUND --- */
+        .ambient-blob {
+            position: absolute; border-radius: 50%; filter: blur(100px);
+            z-index: 0; opacity: 0.4; animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { width: 400px; height: 400px; background: #2E0A59; top: -10%; left: -5%; }
+        .blob-2 { width: 500px; height: 500px; background: #002B5E; bottom: -20%; right: -10%; animation-delay: -10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        /* --- MAIN APP LAYOUT --- */
+        .app-container {
+            width: 90%; max-width: 1200px; height: 85vh;
+            background: rgba(20, 20, 20, 0.4);
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            display: flex; z-index: 10; box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 300px; background: rgba(255, 255, 255, 0.02);
+            border-right: 1px solid var(--glass-border);
+            display: flex; flex-direction: column; padding: 30px 20px; flex-shrink: 0;
+        }
+
+        .user-profile {
+            display: flex; align-items: center; gap: 15px;
+            padding-bottom: 30px; border-bottom: 1px solid var(--glass-border); margin-bottom: 20px;
+        }
+        .user-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; }
+        .user-info h3 { font-size: 16px; font-weight: 600; }
+        .user-info p { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
+
+        .nav-menu { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px;
+            color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
+            transition: all 0.3s ease; cursor: pointer;
+        }
+        .nav-item svg { width: 18px; height: 18px; transition: stroke 0.3s; }
+        .nav-item:hover { background: var(--glass-hover); color: var(--text-main); }
+        .nav-item.active { background: var(--glass-bg); color: var(--text-main); box-shadow: inset 0 0 0 1px var(--glass-border); }
+        .nav-item.active svg { stroke: var(--text-main); }
+
+        /* GUZIKI POWROTU NA DOLE */
+        .back-buttons-container { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        .back-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05);
+            color: white; text-decoration: none; font-size: 13px; font-weight: 600;
+            transition: 0.3s; border: 1px solid transparent;
+        }
+        .back-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255,255,255,0.1); }
+        
+        .back-btn.highlight {
+            background: var(--text-main); color: var(--bg-base); box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        .back-btn.highlight:hover {
+            transform: translateY(-2px); background: #f0f0f0; box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+        }
+        .back-btn svg { width: 16px; height: 16px; }
+
+        /* --- MAIN CONTENT AREA --- */
+        .content-area { flex-grow: 1; padding: 40px 60px; overflow-y: auto; position: relative; }
+        .content-area::-webkit-scrollbar { width: 6px; }
+        .content-area::-webkit-scrollbar-track { background: transparent; }
+        .content-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .page-header { margin-bottom: 40px; }
+        .page-title { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+        .page-subtitle { font-size: 15px; color: var(--text-muted); margin-top: 8px; }
+
+        /* --- SETTINGS GROUPS --- */
+        .settings-group { margin-bottom: 35px; }
+        .group-title {
+            font-size: 13px; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 600; margin-bottom: 12px; margin-left: 15px;
+        }
+        .settings-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden; }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--glass-border); transition: background 0.3s; }
+        .setting-row:last-child { border-bottom: none; }
+        .setting-row:hover { background: rgba(255,255,255,0.02); }
+        .setting-info { display: flex; flex-direction: column; gap: 4px; }
+        .setting-name { font-size: 15px; font-weight: 500; }
+        .setting-desc { font-size: 13px; color: var(--text-muted); max-width: 450px; line-height: 1.4; }
+
+        /* --- INPUTS & TOGGLES --- */
+        .toggle-switch { position: relative; display: inline-block; width: 50px; height: 30px; flex-shrink: 0;}
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.15); transition: .4s; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background-color: white; transition: .4s cubic-bezier(0.16, 1, 0.3, 1); border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        input:checked + .slider { background-color: var(--toggle-on); border-color: var(--toggle-on); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .select-input { background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 10px 15px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; transition: border-color 0.3s; width: 220px; cursor: pointer;}
+        .select-input:focus { border-color: var(--accent-color); }
+
+        /* Kafelki Układu Notatek (Dostosowane do 4 elementów) */
+        .layout-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; padding: 20px; background: rgba(255,255,255,0.01); }
+        .layout-card { border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px 10px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .layout-card:hover { background: rgba(255,255,255,0.05); }
+        .layout-card.selected { border-color: var(--focus-color); background: rgba(52, 199, 89, 0.1); }
+        .layout-icon { width: 100%; height: 50px; border-radius: 6px; background: rgba(0,0,0,0.5); margin-bottom: 10px; display: flex; border: 1px solid rgba(255,255,255,0.1);}
+        .layout-card span { font-size: 12px; font-weight: 500; line-height: 1.2; display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="ambient-blob blob-1"></div>
+    <div class="ambient-blob blob-2"></div>
+
+    <div class="app-container">
+        
+        <aside class="sidebar">
+            <div class="user-profile">
+                <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar">
+                <div class="user-info">
+                    <h3>Michał D.</h3>
+                    <p id="sidebar-class-display">Klasa 8 • EduStream</p>
+                </div>
+            </div>
+
+            <nav class="nav-menu">
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    Preferences
+                </a>
+                <a class="nav-item active" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    Learning Mode
+                </a>
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Watch History
+                </a>
+                <a class="nav-item" onclick="switchTab(this)">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Accessibility
+                </a>
+            </nav>
+
+            <div class="back-buttons-container">
+                <a href="#" class="back-btn">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    Back to EduStream
+                </a>
+                <a href="#" class="back-btn highlight">
+                    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    Back to Edunity
+                </a>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div class="page-header">
+                <h1 class="page-title">Domyślne dla EduStream</h1>
+                <p class="page-subtitle">Raz ustawiasz, jak aplikacja ma się zachowywać podczas oglądania filmów i bajek.</p>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Narzędzia Edukacyjne</h4>
+                <div class="settings-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Tryb EduStream</span>
+                            <span class="setting-desc">Decyduje o intensywności nauki (agresywność quizów, podpowiedzi).</span>
+                        </div>
+                        <select class="select-input">
+                            <option selected>Lekka Edukacja (Zbalansowany)</option>
+                            <option>Czysta Rozrywka (Minimum przerw)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Domyślne Quizy w Wideo</span>
+                            <span class="setting-desc">Czy chcesz, aby filmy przerywały się, sprawdzając Twoją wiedzę?</span>
+                        </div>
+                        <select class="select-input">
+                            <option selected>Na końcu odcinka</option>
+                            <option>Tylko morały (krótkie podsumowania)</option>
+                            <option>Wyłączone</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">"Czy wiesz, że?" (Fun Facts Overlay)</span>
+                            <span class="setting-desc">Małe dymki z ciekawostkami pojawiające się dyskretnie w rogu ekranu.</span>
+                        </div>
+                        <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">"Learn-More Bridge"</span>
+                            <span class="setting-desc">Po obejrzeniu filmu, aplikacja proponuje powiązane lekcje z platformy Edunity.</span>
+                        </div>
+                        <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Nawigacja i Ułatwienia</h4>
+                <div class="settings-card">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Automatyczne Rozdziały AI</span>
+                            <span class="setting-desc">Domyślnie dziel filmy na czytelne fragmenty na osi czasu.</span>
+                        </div>
+                        <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Mapy Fabuły / Postaci (Story Map)</span>
+                            <span class="setting-desc">Generuj podsumowanie bohaterów i osi czasu dla długich bajek/seriali.</span>
+                        </div>
+                        <label class="toggle-switch"><input type="checkbox"><span class="slider"></span></label>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Styl i rozmiar napisów wideo</span>
+                            <span class="setting-desc">Wygląd napisów tylko dla filmów (nie wpływa na globalną czcionkę w Edunity).</span>
+                        </div>
+                        <select class="select-input">
+                            <option selected>Domyślne (Normalne)</option>
+                            <option>Większe (Dla dzieci)</option>
+                            <option>Kontrastowe (Tło pod tekstem)</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <span class="setting-name">Jakość przy słabym łączu (Fallback)</span>
+                            <span class="setting-desc">Co zrobić, gdy internet zwalnia?</span>
+                        </div>
+                        <select class="select-input">
+                            <option selected>Auto (dopasuj na bieżąco)</option>
+                            <option>Twarda redukcja do 480p</option>
+                            <option>Zatrzymaj i buforuj HD</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h4 class="group-title">Domyślny Układ Notatnika EduNotes</h4>
+                <div class="settings-card" style="padding-bottom: 0;">
+                    <div class="setting-row" style="border-bottom: none;">
+                        <div class="setting-info">
+                            <span class="setting-name">Jak domyślnie otwierać notatnik, gdy odpalasz nowy film?</span>
+                        </div>
+                    </div>
+                    <div class="layout-cards">
+                        <div class="layout-card selected" onclick="selectLayout(this)">
+                            <div class="layout-icon" style="flex-direction: row;">
+                                <div style="width: 70%; background: rgba(255,255,255,0.2); height: 100%; border-radius: 4px 0 0 4px;"></div>
+                                <div style="width: 30%; background: var(--focus-color); height: 100%; border-radius: 0 4px 4px 0; opacity: 0.8;"></div>
+                            </div>
+                            <span>Split Screen</span>
+                        </div>
+                        <div class="layout-card" onclick="selectLayout(this)">
+                            <div class="layout-icon" style="position: relative;">
+                                <div style="width: 100%; background: rgba(255,255,255,0.2); height: 100%; border-radius: 4px;"></div>
+                                <div style="position: absolute; bottom: 5px; right: 5px; width: 30%; background: var(--focus-color); height: 40%; border-radius: 4px; opacity: 0.8; box-shadow: 0 2px 10px rgba(0,0,0,0.5);"></div>
+                            </div>
+                            <span>Widget</span>
+                        </div>
+                        <div class="layout-card" onclick="selectLayout(this)">
+                            <div class="layout-icon" style="justify-content: center; align-items: center;">
+                                <svg viewBox="0 0 24 24" width="24" height="24" stroke="rgba(255,255,255,0.5)" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                            </div>
+                            <span>Tylko Notatnik</span>
+                        </div>
+                        <div class="layout-card" onclick="selectLayout(this)">
+                            <div class="layout-icon" style="justify-content: center; align-items: center;">
+                                <svg viewBox="0 0 24 24" width="24" height="24" stroke="rgba(255, 60, 60, 0.8)" fill="none" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                            </div>
+                            <span>Wyłączony</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 50px;"></div>
+        </main>
+    </div>
+
+    <script>
+        function switchTab(clickedItem) {
+            const items = document.querySelectorAll('.nav-item');
+            items.forEach(item => item.classList.remove('active'));
+            clickedItem.classList.add('active');
+        }
+
+        function selectLayout(card) {
+            const siblings = card.parentElement.querySelectorAll('.layout-card');
+            siblings.forEach(sib => sib.classList.remove('selected'));
+            card.classList.add('selected');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduStream - Fundacja EkoŚwiat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- RESET & VARIABLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+
+        :root {
+            --accent-color: #0A84FF;
+            --gradient-accent: linear-gradient(135deg, #0A84FF, #a855f7); 
+            --bg-dark: #050505;
+            --bg-panel: #0f0f0f;
+            --bg-card: #121212;
+            --text-main: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --success-green: #34C759;
+        }
+
+        /* --- TRYB JASNY APPLE --- */
+        body.light-theme {
+            --bg-dark: #F5F5F7;
+            --bg-panel: #F5F5F7;
+            --bg-card: #FFFFFF;
+            --text-main: #1D1D1F;
+            --text-muted: #86868B;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-hover: rgba(0, 0, 0, 0.05);
+        }
+        body.light-theme .search-bar input, body.light-theme .comment-input-field { color: #1D1D1F; }
+        body.light-theme .navbar, body.light-theme .channel-tabs-container { background: rgba(245, 245, 247, 0.85); }
+        body.light-theme .channel-nav-btn { color: #86868B; }
+        body.light-theme .channel-nav-btn:hover, body.light-theme .channel-nav-btn.active { color: #1D1D1F; }
+        
+        body.light-theme .video-card:hover, 
+        body.light-theme .path-card:hover, 
+        body.light-theme .post-card, 
+        body.light-theme .similar-channel-card,
+        body.light-theme .quiz-card { background: #FFFFFF; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); }
+        
+        body.light-theme .btn-secondary, body.light-theme .sort-select { background: rgba(0,0,0,0.05); color: #1D1D1F; border-color: rgba(0,0,0,0.1); }
+        body.light-theme .btn-secondary:hover, body.light-theme .sort-select:hover { background: rgba(0,0,0,0.1); }
+        body.light-theme .comment-bubble { background: rgba(0,0,0,0.04); }
+
+        body.light-theme .path-line, body.light-theme .path-connector.locked { background: rgba(0,0,0,0.1); }
+        body.light-theme .path-marker { background: #F5F5F7; border-color: rgba(0,0,0,0.2); }
+        body.light-theme .path-marker.locked { color: rgba(0,0,0,0.3); }
+        body.light-theme .path-card { background: #FFFFFF; border-color: rgba(0,0,0,0.1); }
+
+        body.light-theme .btn-follow-glass, body.light-theme .btn-glass-pill { background: rgba(255,255,255,0.8); border-color: rgba(0,0,0,0.1); color: #1D1D1F; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body.light-theme .btn-follow-glass:hover, body.light-theme .btn-glass-pill:hover { background: #FFFFFF; border-color: #a855f7; }
+        body.light-theme .btn-follow-glass.following { background: #1D1D1F; color: #FFFFFF; }
+        
+        body.light-theme .difficulty-tag { background: rgba(255, 255, 255, 0.9); color: #1D1D1F; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        body.light-theme .community-flashcard { background: #F5F5F7; border-color: rgba(0,0,0,0.1); }
+        body.light-theme .fc-answer-text { background: rgba(0,0,0,0.05); color: #1D1D1F; }
+        body.light-theme .fc-reveal-btn { background: rgba(255,255,255,0.9); color: #1D1D1F; border-color: rgba(0,0,0,0.2); }
+        body.light-theme .filter-pill { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #1D1D1F;}
+        body.light-theme .filter-pill:hover { background: rgba(0,0,0,0.1); }
+        body.light-theme .filter-pill.active { background: #1D1D1F; color: #FFFFFF; }
+        body.light-theme .progress-bar-bg { background: rgba(0,0,0,0.2); }
+
+        body { 
+            font-family: 'Inter', sans-serif; background-color: var(--bg-dark); color: var(--text-main); 
+            overflow-x: hidden; min-height: 100vh; transition: background-color 0.4s, color 0.4s;
+        }
+
+        /* --- NAVBAR --- */
+        .navbar {
+            position: sticky; top: 0; left: 0; width: 100%; height: 70px; padding: 0 40px; 
+            display: flex; justify-content: space-between; align-items: center; z-index: 100;
+            background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--glass-border); transition: 0.4s;
+        }
+        .nav-left { display: flex; align-items: center; }
+        .logo-link { display: flex; align-items: center; text-decoration: none; margin-top: -80px; margin-bottom: -80px; }
+        .logo-img { width: 265px; height: auto; display: block; filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3)); }
+
+        .search-container { flex-grow: 1; display: flex; justify-content: center; padding: 0 30px; }
+        .search-bar { 
+            background: rgba(128,128,128,0.1); border: 1px solid var(--glass-border); 
+            border-radius: 24px; padding: 10px 20px; display: flex; align-items: center; gap: 12px; 
+            width: 100%; max-width: 500px; transition: 0.3s; 
+        }
+        .search-bar:focus-within { border-color: #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); background: rgba(128,128,128,0.15);}
+        .search-bar input { background: transparent; border: none; color: inherit; outline: none; width: 100%; font-family: inherit; font-size: 14px; }
+        .search-bar input::placeholder { color: var(--text-muted); }
+
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+        .btn-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.3s; }
+        .btn-icon:hover { background: var(--glass-hover); transform: scale(1.05); }
+        .btn-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke: currentColor; }
+        .user-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); cursor: pointer;}
+
+        /* --- CHANNEL BANNER & HEADER --- */
+        .channel-banner {
+            width: 100%; height: 280px; position: relative;
+            background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop');
+            background-size: cover; background-position: center;
+        }
+        .banner-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, var(--bg-dark), transparent);
+            transition: 0.4s;
+        }
+
+        .channel-info-container {
+            max-width: 1200px; margin: 0 auto; padding: 0 40px;
+            display: flex; align-items: flex-start; gap: 25px;
+            margin-top: -60px; position: relative; z-index: 10;
+        }
+        .channel-avatar-large {
+            width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
+            border: 4px solid var(--bg-dark); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: var(--bg-card); transition: border-color 0.4s;
+        }
+        .channel-details { margin-top: 70px; flex-grow: 1; }
+        .channel-name { font-size: 32px; font-weight: 800; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;}
+        .verified-badge { background: var(--gradient-accent); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; justify-content: center; align-items: center; color: white; }
+        .verified-badge svg { width: 14px; height: 14px; stroke-width: 3; }
+        
+        .channel-stats { display: flex; gap: 15px; color: var(--text-muted); font-size: 14px; font-weight: 500; margin-bottom: 15px; }
+        .channel-bio { font-size: 14px; line-height: 1.5; color: inherit; max-width: 700px; opacity: 0.9; margin-bottom: 20px;}
+        
+        .channel-actions { display: flex; gap: 12px; }
+
+        /* PRZYCISKI GLASSMORPHISM */
+        .btn-follow-glass, .btn-glass-pill {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-main);
+            padding: 10px 30px;
+            border-radius: 30px; 
+            font-size: 14px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-follow-glass:hover, .btn-glass-pill:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            border-color: var(--accent-color);
+        }
+        .btn-follow-glass.following {
+            background: var(--text-main);
+            color: var(--bg-dark);
+            border-color: transparent;
+        }
+
+        /* NOWY PRZYCISK GRADIENTOWY (Zapowiedzi & Wyślij komentarz) */
+        .btn-gradient {
+            background: var(--gradient-accent);
+            color: #ffffff;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+            filter: brightness(1.1);
+        }
+        body.light-theme .btn-gradient { color: #ffffff; }
+
+        /* Przycisk Szarawy / Wyciszony (do przypomnień) */
+        .btn-muted {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 10px 22px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-muted:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        body.light-theme .btn-muted {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .btn-muted:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+
+        /* --- CHANNEL TABS --- */
+        .channel-tabs-container {
+            max-width: 1200px; margin: 30px auto 0 auto; padding: 0 40px;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex; gap: 30px; position: sticky; top: 70px; z-index: 90;
+            background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            transition: 0.4s; overflow-x: auto;
+        }
+        .channel-tabs-container::-webkit-scrollbar { display: none; }
+        .channel-nav-btn {
+            background: none; border: none; color: var(--text-muted); font-size: 14px; font-weight: 600; font-family: inherit;
+            padding: 15px 0; cursor: pointer; position: relative; transition: 0.3s; text-transform: uppercase; letter-spacing: 0.5px;
+            white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .channel-nav-btn:hover { color: var(--text-main); }
+        .channel-nav-btn.active { color: var(--text-main); }
+        .channel-nav-btn.active::after {
+            content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px;
+            background: var(--gradient-accent); border-radius: 3px 3px 0 0;
+        }
+        .channel-nav-btn svg { width: 16px; height: 16px; stroke-width: 2; fill: none; stroke: currentColor; }
+
+        /* --- MAIN CONTENT AREA --- */
+        .content-section { max-width: 1200px; margin: 0 auto; padding: 30px 40px 80px 40px; display: none; animation: fadeIn 0.4s ease; }
+        .content-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+
+        /* SORTING SELECT */
+        .sort-select { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 8px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: inherit; outline: none; cursor: pointer; transition: 0.3s; }
+        .sort-select option { background: var(--bg-dark); color: var(--text-main); }
+
+        /* FILTRY TEMATYCZNE */
+        .filter-pills-container {
+            display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; padding-bottom: 5px;
+            scrollbar-width: none; 
+        }
+        .filter-pills-container::-webkit-scrollbar { display: none; } 
+        .filter-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 8px 20px; 
+            border-radius: 20px; color: var(--text-main); cursor: pointer; white-space: nowrap; 
+            font-size: 14px; font-weight: 600; transition: 0.3s; font-family: inherit;
+        }
+        .filter-pill:hover { background: var(--glass-hover); border-color: #a855f7; }
+        .filter-pill.active { background: var(--text-main); color: var(--bg-dark); border-color: transparent;}
+        .filter-pill svg { width: 16px; height: 16px; }
+
+        /* TAB: WIDEO */
+        .video-card { cursor: pointer; border-radius: 12px; transition: 0.3s; padding-bottom: 10px; border: 1px solid transparent; position: relative;}
+        .video-card:hover { transform: translateY(-5px); background: var(--glass-bg); border-color: var(--glass-border); }
+        .thumb-wrapper { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 16/9; margin-bottom: 12px; }
+        .thumb-img { width: 100%; height: 100%; object-fit: cover; transition: 0.4s; }
+        .video-card:hover .thumb-img { transform: scale(1.05); }
+        .time-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.8); color: white; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 6px; z-index: 2;}
+        
+        .difficulty-tag {
+            position: absolute; top: 8px; left: 8px;
+            background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px);
+            color: white; font-size: 11px; font-weight: 700;
+            padding: 4px 8px; border-radius: 8px; z-index: 2;
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        /* ZAKŁADKI / DO POWTÓRKI */
+        .btn-bookmark {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            color: white; cursor: pointer; z-index: 10; transition: 0.3s;
+        }
+        .btn-bookmark:hover { background: rgba(0,0,0,0.8); transform: scale(1.1); border-color: #a855f7;}
+        .btn-bookmark svg { width: 16px; height: 16px; transition: 0.3s; fill: none; stroke: currentColor; stroke-width: 2;}
+        .btn-bookmark.saved { background: var(--text-main); color: var(--bg-dark); border-color: transparent;}
+        .btn-bookmark.saved svg { fill: currentColor; stroke: currentColor;}
+
+        /* PASEK POSTĘPU */
+        .progress-bar-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: rgba(255,255,255,0.3); z-index: 3; }
+        .progress-bar-fill { height: 100%; background: #a855f7; box-shadow: 0 0 8px rgba(168, 85, 247, 0.8);}
+
+        /* MINIMALISTYCZNY GLASS HOVER OVERLAY */
+        .video-hover-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 15, 15, 0.35); 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            opacity: 0; transition: opacity 0.3s ease;
+            display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+            padding: 20px; z-index: 5; pointer-events: none;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .video-card:hover .video-hover-overlay { opacity: 1; pointer-events: auto;}
+        .hover-title { font-size: 13px; color: #ffffff; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.5px;}
+        .learn-list { margin: 0; padding-left: 18px; font-size: 13px; color: rgba(255,255,255,0.95); line-height: 1.6; margin-bottom: 12px; font-weight: 500;}
+        
+        body.light-theme .video-hover-overlay {
+            background: rgba(255, 255, 255, 0.45);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+        body.light-theme .hover-title { color: #1D1D1F; }
+        body.light-theme .learn-list { color: rgba(28, 28, 31, 0.95); }
+
+        .vid-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; padding: 0 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .vid-stats { font-size: 12px; color: var(--text-muted); padding: 0 10px; }
+
+        /* TAB: ŚCIEŻKA NAUKI */
+        .learning-path-wrapper { display: flex; flex-direction: column; align-items: center; position: relative; padding: 40px 0; margin-top: 20px;}
+        .path-line { position: absolute; top: 40px; bottom: 40px; left: 50%; transform: translateX(-50%); width: 6px; background: rgba(255,255,255,0.05); border-radius: 4px; transition: 0.4s;}
+        .path-node { display: flex; width: 100%; position: relative; margin-bottom: 60px; align-items: center; }
+        .path-node.left { justify-content: flex-end; padding-right: 50%; }
+        .path-node.right { justify-content: flex-start; padding-left: 50%; }
+        .path-card-wrapper { width: 100%; max-width: 450px; padding: 0 40px; position: relative; }
+        .path-node.left .path-card-wrapper { text-align: right; }
+        .path-node.right .path-card-wrapper { text-align: left; }
+        .path-connector { position: absolute; top: 50%; width: 40px; height: 4px; transform: translateY(-50%); z-index: 1; border-radius: 2px;}
+        .path-node.left .path-connector { right: 0; }
+        .path-node.right .path-connector { left: 0; }
+        .path-connector.locked { background: rgba(255,255,255,0.05); }
+        .path-marker { 
+            position: absolute; left: 50%; transform: translate(-50%, -50%); top: 50%; 
+            width: 48px; height: 48px; border-radius: 50%; background: var(--bg-dark); 
+            border: 4px solid rgba(255,255,255,0.1); z-index: 2; display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .path-marker.completed { border-color: var(--success-green); background: rgba(52, 199, 89, 0.1); color: var(--success-green); box-shadow: 0 0 15px rgba(52, 199, 89, 0.4);}
+        .path-marker.active { border-color: #a855f7; background: var(--gradient-accent); color: white; box-shadow: 0 0 20px rgba(168, 85, 247, 0.6); animation: pulseMarker 2s infinite cubic-bezier(0.66, 0, 0, 1);}
+        .path-marker.locked { border-color: rgba(128,128,128,0.3); color: rgba(128,128,128,0.5); }
+        @keyframes pulseMarker { 0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.6); } 70% { box-shadow: 0 0 0 15px rgba(168, 85, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } }
+        .path-card { 
+            background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; 
+            padding: 15px; display: flex; gap: 15px; align-items: center; text-align: left; cursor: pointer; transition: 0.3s;
+        }
+        .path-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .path-card.locked { opacity: 0.6; cursor: not-allowed; filter: grayscale(80%); }
+        .path-card.locked:hover { transform: none; box-shadow: none; }
+        .path-card-img { width: 130px; height: 75px; border-radius: 8px; object-fit: cover; }
+        .path-card-title { font-size: 15px; font-weight: 700; margin-bottom: 5px; color: inherit; }
+        .path-card-desc { font-size: 12px; color: var(--text-muted); font-weight: 600;}
+
+        /* TAB: QUIZY */
+        .quiz-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; transition: 0.3s; text-align: center; display: flex; flex-direction: column; justify-content: space-between;}
+        .quiz-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.4); border-color: #a855f7; }
+        .premium-icon-wrapper {
+            width: 76px; height: 76px; margin: 0 auto 20px auto; border-radius: 22px;
+            display: flex; justify-content: center; align-items: center; position: relative;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.2), 0 10px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .premium-icon-wrapper::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+            border-radius: 22px 22px 0 0; pointer-events: none;
+        }
+        .premium-icon-wrapper svg { color: white; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4)); }
+        .icon-bg-blue { background: linear-gradient(135deg, #00c6ff, #0072ff); }
+        .icon-bg-red { background: linear-gradient(135deg, #ff758c, #ff7eb3); }
+        .icon-bg-green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .icon-bg-gold { background: linear-gradient(135deg, #f6d365, #fda085); }
+        .quiz-title { font-size: 18px; font-weight: 700; margin-bottom: 10px; line-height: 1.3;}
+        .quiz-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500;}
+        .btn-glow { position: relative; box-shadow: 0 0 10px rgba(168, 85, 247, 0.4); animation: pulseGlow 2s infinite cubic-bezier(0.66, 0, 0, 1); }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.5); } 70% { box-shadow: 0 0 0 12px rgba(168, 85, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); } }
+
+        /* TAB: SPOŁECZNOŚĆ */
+        .posts-layout { display: flex; flex-direction: column; gap: 30px; max-width: 800px; margin: 0 auto; }
+        .post-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 25px; transition: 0.3s; position: relative;}
+        .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
+        .post-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; }
+        .post-author { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+        .post-date { font-size: 12px; color: var(--text-muted); font-weight: 400;}
+        .post-content { font-size: 15px; line-height: 1.6; margin-bottom: 20px; white-space: pre-wrap; padding-right: 40px;}
+        .post-img { width: 100%; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--glass-border); }
+        .post-actions { display: flex; gap: 20px; border-top: 1px solid var(--glass-border); padding-top: 15px; margin-top: 15px; }
+        .post-action-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; color: var(--text-muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; font-family: inherit;}
+        .post-action-btn:hover { color: var(--accent-color); }
+        .post-action-btn svg { width: 18px; height: 18px; stroke-width: 2; fill: none; stroke: currentColor; }
+        
+        .comments-section-wrapper { display: none; margin-top: 20px; border-top: 1px dashed var(--glass-border); padding-top: 20px; animation: fadeIn 0.3s ease; }
+        .comment-item { display: flex; gap: 12px; margin-bottom: 15px; }
+        .comment-bubble { background: rgba(255,255,255,0.05); padding: 12px 15px; border-radius: 12px; font-size: 13px; flex-grow: 1; line-height: 1.5;}
+        .comment-input-area { display: flex; gap: 10px; margin-top: 15px; align-items: center;}
+        .comment-input-field { flex-grow: 1; background: transparent; border: none; border-bottom: 1px solid var(--glass-border); padding: 8px 0; outline: none; color: inherit; font-family: inherit; font-size: 13px; transition: 0.3s;}
+        .comment-input-field:focus { border-color: #a855f7; }
+
+        .community-flashcard { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; position: relative; }
+        .fc-question { font-size: 16px; font-weight: 800; margin-bottom: 15px; color: #a855f7; padding-right: 40px;}
+        .fc-answer-area { position: relative; border-radius: 8px; overflow: hidden;}
+        .fc-answer-text { font-size: 14px; line-height: 1.6; filter: blur(8px); transition: filter 0.5s ease; user-select: none; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;}
+        .fc-reveal-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); color: white; padding: 10px 20px; border-radius: 24px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.3s; z-index: 2; font-family: inherit; box-shadow: 0 4px 15px rgba(0,0,0,0.3);}
+        .fc-reveal-btn:hover { background: rgba(255,255,255,0.2); transform: translate(-50%, -50%) scale(1.05); }
+        .fc-answer-area.revealed .fc-answer-text { filter: blur(0); user-select: auto; background: rgba(52, 199, 89, 0.1); border: 1px solid rgba(52, 199, 89, 0.3);}
+        .fc-answer-area.revealed .fc-reveal-btn { opacity: 0; pointer-events: none; }
+
+        /* TAB: PODOBNE KANAŁY */
+        .similar-channel-card { display: flex; flex-direction: column; align-items: center; padding: 30px 20px; border-radius: 16px; background: var(--glass-bg); border: 1px solid var(--glass-border); text-align: center; transition: 0.3s;}
+        .similar-channel-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.2); border-color: #a855f7;}
+        .sim-avatar { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; }
+        .sim-name { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+        .sim-subs { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+
+        /* TOAST NOTIFICATION */
+        .toast { position: fixed; bottom: 30px; left: 30px; background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; opacity: 0; pointer-events: none; transition: 0.3s; transform: translateY(20px); z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast svg { stroke-width: 1.5; fill: none; stroke: currentColor; width: 18px; height: 18px;}
+        body.light-theme .toast { background: rgba(255, 255, 255, 0.95); color: #000; border-color: rgba(0,0,0,0.1); }
+
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <a href="index.html" class="logo-link">
+                <img src="logoedustream.png" alt="EduStream Logo" class="logo-img">
+            </a>
+        </div>
+        
+        <div class="search-container">
+            <div class="search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18" style="opacity:0.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Szukaj na kanale Fundacja EkoŚwiat...">
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button id="themeToggleBtn" onclick="toggleTheme()" class="btn-icon" title="Zmień motyw">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+            </button>
+            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="User" class="user-avatar" title="Twój profil">
+        </div>
+    </header>
+
+    <main>
+        <section class="channel-banner">
+            <div class="banner-overlay"></div>
+        </section>
+
+        <section class="channel-info-container">
+            <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=300&auto=format&fit=crop" class="channel-avatar-large" alt="Avatar Kanału">
+            
+            <div class="channel-details">
+                <h1 class="channel-name">
+                    Fundacja EkoŚwiat 
+                    <span class="verified-badge" title="Zweryfikowany Edukator">
+                        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </span>
+                </h1>
+                
+                <div class="channel-stats">
+                    <span>@EkoSwiatPL</span>
+                    <span>•</span>
+                    <span>145 tys. subskrypcji</span>
+                    <span>•</span>
+                    <span>124 filmy</span>
+                </div>
+
+                <p class="channel-bio">Tworzymy edukacyjne filmy o geografii, klimacie i procesach kształtujących naszą planetę Ziemię. Naszym celem jest popularyzacja nauki w przystępny sposób. Nowe odcinki co wtorek i piątek! 🌍📚</p>
+
+                <div class="channel-actions">
+                    <button class="btn-follow-glass" id="followBtn" onclick="toggleFollow()">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                        Obserwuj
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <nav class="channel-tabs-container">
+            <button class="channel-nav-btn active" onclick="switchTab('tab-videos', this)">Wideo</button>
+            <button class="channel-nav-btn" onclick="switchTab('tab-learning-path', this)">
+                Ścieżki Nauki
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+            </button>
+            <button class="channel-nav-btn" onclick="switchTab('tab-quizzes', this)">
+                Quizy Premium
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </button>
+            <button class="channel-nav-btn" onclick="switchTab('tab-community', this)">Społeczność</button>
+            <button class="channel-nav-btn" onclick="switchTab('tab-channels', this)">Podobne Kanały</button>
+        </nav>
+
+        <section id="tab-videos" class="content-section active">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="font-size: 18px;">Najnowsze materiały</h2>
+                <select class="sort-select" id="videoSortSelect" onchange="sortVideos()">
+                    <option value="newest">Od najnowszych</option>
+                    <option value="popular">Najpopularniejsze</option>
+                    <option value="oldest">Od najstarszych</option>
+                </select>
+            </div>
+
+            <div class="filter-pills-container">
+                <button class="filter-pill active" onclick="filterVideos(this)">Wszystko</button>
+                <button class="filter-pill" onclick="filterVideos(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l4 8 5-5 5 15H2L8 3z"/></svg>
+                    Geologia
+                </button>
+                <button class="filter-pill" onclick="filterVideos(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12c2 0 3-3 6-3s4 3 6 3 3-3 6-3v2c-2 0-3 3-6 3s-4-3-6-3-3 3-6 3v-2z"/><path d="M2 18c2 0 3-3 6-3s4 3 6 3 3-3 6-3v2c-2 0-3 3-6 3s-4-3-6-3-3 3-6 3v-2z"/></svg>
+                    Hydrosfera
+                </button>
+                <button class="filter-pill" onclick="filterVideos(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+                    Klimatologia
+                </button>
+                <button class="filter-pill" onclick="filterVideos(this)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
+                    Kartografia
+                </button>
+            </div>
+            
+            <div class="grid-layout" id="videoGrid">
+                
+                <div class="video-card" onclick="window.location.href='youtube.html'">
+                    <div class="thumb-wrapper">
+                        <div class="btn-bookmark" onclick="toggleBookmark(this); event.stopPropagation();" title="Zapisz do powtórki">
+                            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=400" class="thumb-img" alt="Miniaturka">
+                        <span class="difficulty-tag">🟢 Podstawy</span>
+                        <span class="time-badge">45:00</span>
+                        
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: 45%;"></div>
+                        </div>
+
+                        <div class="video-hover-overlay">
+                            <div class="hover-title">Czego się nauczysz:</div>
+                            <ul class="learn-list">
+                                <li>Mechanizm cyrkulacji termohalinowej</li>
+                                <li>Wpływ zasolenia na gęstość wody</li>
+                                <li>Znaczenie Golfstromu dla Europy</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h3 class="vid-title">Sekrety Ziemi: Jak prądy oceaniczne kształtują nasz klimat?</h3>
+                    <p class="vid-stats">12 tys. wyświetleń • 2 dni temu</p>
+                </div>
+                
+                <div class="video-card" onclick="window.location.href='youtube.html'">
+                    <div class="thumb-wrapper">
+                        <div class="btn-bookmark" onclick="toggleBookmark(this); event.stopPropagation();" title="Zapisz do powtórki">
+                            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=400" class="thumb-img" alt="Miniaturka">
+                        <span class="difficulty-tag" style="color: #f6d365;">🟡 Matura</span>
+                        <span class="time-badge">18:20</span>
+                        
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 0%;"></div></div>
+
+                        <div class="video-hover-overlay">
+                            <div class="hover-title">Czego się nauczysz:</div>
+                            <ul class="learn-list">
+                                <li>Różnice w gradiencie termicznym</li>
+                                <li>Wpływ wysokości na ciśnienie</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h3 class="vid-title">Dlaczego w górach jest zimniej? [Geografia dla opornych]</h3>
+                    <p class="vid-stats">8.5 tys. wyświetleń • 1 tydzień temu</p>
+                </div>
+
+                <div class="video-card" onclick="window.location.href='youtube.html'">
+                    <div class="thumb-wrapper">
+                        <div class="btn-bookmark saved" onclick="toggleBookmark(this); event.stopPropagation();" title="Usuń z powtórek">
+                            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=400" class="thumb-img" alt="Miniaturka">
+                        <span class="difficulty-tag" style="color: #ff758c;">🔴 Studia</span>
+                        <span class="time-badge">22:15</span>
+                        
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 100%; background: var(--success-green);"></div></div>
+
+                        <div class="video-hover-overlay">
+                            <div class="hover-title">Czego się nauczysz:</div>
+                            <ul class="learn-list">
+                                <li>Ruchy płyt litosfery w detalach</li>
+                                <li>Klasyfikacja typów erupcji</li>
+                                <li>Fale sejsmiczne (P i S)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h3 class="vid-title">Tektonika płyt: Trzęsienia ziemi i wulkany. Jak to działa?</h3>
+                    <p class="vid-stats">45 tys. wyświetleń • 2 tygodnie temu</p>
+                </div>
+
+                <div class="video-card" onclick="window.location.href='youtube.html'">
+                    <div class="thumb-wrapper">
+                        <div class="btn-bookmark" onclick="toggleBookmark(this); event.stopPropagation();">
+                            <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1473448912268-2022ce9509d8?q=80&w=400" class="thumb-img" alt="Miniaturka">
+                        <span class="difficulty-tag">🟢 Podstawy</span>
+                        <span class="time-badge">31:05</span>
+                        <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 15%;"></div></div>
+                        <div class="video-hover-overlay">
+                            <div class="hover-title">Czego się nauczysz:</div>
+                            <ul class="learn-list">
+                                <li>Rozmieszczenie lasów równikowych</li>
+                                <li>Bioróżnorodność ekosystemu</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <h3 class="vid-title">Lasy deszczowe: Płuca planety w niebezpieczeństwie</h3>
+                    <p class="vid-stats">102 tys. wyświetleń • 1 miesiąc temu</p>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="tab-learning-path" class="content-section">
+            <h2 style="font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 10px;">Ścieżka: Opanuj Hydrosferę 🌊</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 40px;">Krok po kroku przez wszystkie procesy wodne na Ziemi.</p>
+            
+            <div class="learning-path-wrapper">
+                <div class="path-line"></div>
+
+                <div class="path-node left">
+                    <div class="path-connector" style="background: var(--success-green);"></div>
+                    <div class="path-marker completed" title="Ukończone!">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="3" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div class="path-card-wrapper">
+                        <div class="path-card" style="border-color: var(--success-green);">
+                            <img src="https://images.unsplash.com/photo-1518182170546-076616fd6285?q=80&w=200" class="path-card-img">
+                            <div>
+                                <h4 class="path-card-title">Krok 1: Wstęp do Prądów Oceanicznych</h4>
+                                <p class="path-card-desc" style="color: var(--success-green);">100% Ukończono</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="path-node right">
+                    <div class="path-connector" style="background: var(--gradient-accent);"></div>
+                    <div class="path-marker active" title="Kontynuuj naukę">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke-width="2" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </div>
+                    <div class="path-card-wrapper">
+                        <div class="path-card" style="border-color: #a855f7;">
+                            <img src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=200" class="path-card-img">
+                            <div>
+                                <h4 class="path-card-title">Krok 2: Cyrkulacja Termohalinowa</h4>
+                                <p class="path-card-desc" style="color: #a855f7;">Twoja lekcja na dzisiaj</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="path-node left">
+                    <div class="path-connector locked"></div>
+                    <div class="path-marker locked" title="Musisz ukończyć Krok 2">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke-width="2" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </div>
+                    <div class="path-card-wrapper">
+                        <div class="path-card locked">
+                            <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=200" class="path-card-img">
+                            <div>
+                                <h4 class="path-card-title">Krok 3: Zlodowacenia i Lodowce</h4>
+                                <p class="path-card-desc">Zablokowane</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-quizzes" class="content-section">
+            <h2 style="font-size: 18px; margin-bottom: 20px;">Kolekcja Premium: Quizy i Testy</h2>
+            
+            <div class="grid-layout">
+                <div class="quiz-card">
+                    <div>
+                        <div class="premium-icon-wrapper icon-bg-blue">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                                <path d="M2 12h20"></path>
+                            </svg>
+                        </div>
+                        <h3 class="quiz-title">Klimatologia i Pogoda</h3>
+                        <p class="quiz-meta">15 pytań • Poziom: Średni</p>
+                    </div>
+                    <button class="btn-glass-pill btn-glow" onclick="window.location.href='quiz.html'">Rozwiąż Quiz</button>
+                </div>
+
+                <div class="quiz-card">
+                    <div>
+                        <div class="premium-icon-wrapper icon-bg-red">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8.5 14.5L4 21h16l-4.5-6.5"></path>
+                                <path d="M12 11v-4"></path>
+                                <path d="M12 3v1"></path>
+                                <path d="M16 6l1-1"></path>
+                                <path d="M8 6L7 5"></path>
+                            </svg>
+                        </div>
+                        <h3 class="quiz-title">Wulkany i Trzęsienia Ziemi</h3>
+                        <p class="quiz-meta">20 pytań • Poziom: Trudny</p>
+                    </div>
+                    <button class="btn-glass-pill btn-glow" onclick="window.location.href='quiz.html'">Rozwiąż Quiz</button>
+                </div>
+
+                <div class="quiz-card">
+                    <div>
+                        <div class="premium-icon-wrapper icon-bg-green">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+                                <line x1="9" y1="3" x2="9" y2="18"></line>
+                                <line x1="15" y1="6" x2="15" y2="21"></line>
+                            </svg>
+                        </div>
+                        <h3 class="quiz-title">Mapy i Kartografia</h3>
+                        <p class="quiz-meta">12 pytań • Poziom: Łatwy</p>
+                    </div>
+                    <button class="btn-glass-pill btn-glow" onclick="window.location.href='quiz.html'">Rozwiąż Quiz</button>
+                </div>
+
+                <div class="quiz-card">
+                    <div>
+                        <div class="premium-icon-wrapper icon-bg-gold">
+                            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 12l-10-10L2 12l10 10 10-10z"></path>
+                                <path d="M2 12l10 10 10-10"></path>
+                                <path d="M12 2v20"></path>
+                            </svg>
+                        </div>
+                        <h3 class="quiz-title">Procesy Zewnętrzne</h3>
+                        <p class="quiz-meta">25 pytań • Poziom: Matura</p>
+                    </div>
+                    <button class="btn-glass-pill btn-glow" onclick="window.location.href='quiz.html'">Rozwiąż Quiz</button>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="tab-community" class="content-section">
+            <div class="posts-layout">
+                
+                <div class="post-card">
+                    <div class="btn-bookmark" onclick="toggleBookmark(this);" style="top: 20px; right: 20px;" title="Zapisz do powtórki">
+                        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                    </div>
+
+                    <div class="post-header">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100" class="post-avatar">
+                        <div>
+                            <div class="post-author">Fundacja EkoŚwiat <span class="verified-badge" style="width:14px; height:14px;"><svg viewBox="0 0 24 24" style="width:8px; height:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg></span></div>
+                            <div class="post-date">1 godzinę temu</div>
+                        </div>
+                    </div>
+                    
+                    <div class="community-flashcard">
+                        <div style="font-size: 12px; font-weight: 800; color: #a855f7; text-transform: uppercase; margin-bottom: 5px;">⚡ Szybka powtórka do matury</div>
+                        <div class="fc-question">Jak nazywa się strefa w oceanie, w której następuje gwałtowny spadek temperatury wody wraz z głębokością?</div>
+                        
+                        <div class="fc-answer-area">
+                            <div class="fc-answer-text">
+                                <strong>Termoklina</strong> – to warstwa wody w oceanie lub jeziorze, w której temperatura gwałtownie spada wraz ze wzrostem głębokości. Oddziela ona ciepłe wody powierzchniowe od zimnych wód głębinowych.
+                            </div>
+                            <button class="fc-reveal-btn" onclick="revealFlashcard(this)">Odkryj odpowiedź</button>
+                        </div>
+                    </div>
+
+                    <div class="post-actions">
+                        <button class="post-action-btn" onclick="likePost(this)"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> 450</button>
+                        <button class="post-action-btn" onclick="toggleComments(this)"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> Komentarze (2)</button>
+                    </div>
+                    
+                    <div class="comments-section-wrapper">
+                        <div class="comments-list">
+                            <div class="comment-item">
+                                <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                                <div class="comment-bubble">
+                                    <strong>Anna Kowalska</strong> <span style="color: var(--text-muted); font-size: 11px; margin-left: 5px;">40 minut temu</span><br>
+                                    Nigdy bym tego nie pamiętała! Dzięki za przypomnienie przed jutrzejszą wejściówką. 🙌
+                                </div>
+                            </div>
+                            <div class="comment-item">
+                                <img src="https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                                <div class="comment-bubble">
+                                    <strong>Marek Z.</strong> <span style="color: var(--text-muted); font-size: 11px; margin-left: 5px;">15 minut temu</span><br>
+                                    Super inicjatywa z tymi fiszkami! Czekam na więcej z klimatologii.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comment-input-area">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                            <input type="text" class="comment-input-field" placeholder="Napisz komentarz..." onkeypress="if(event.key === 'Enter') submitComment(this)">
+                            <button class="btn-gradient" style="padding: 6px 15px; font-size: 13px; border-radius: 16px;" onclick="submitComment(this.previousElementSibling)">Wyślij</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="post-card">
+                    <div class="btn-bookmark" onclick="toggleBookmark(this);" style="top: 20px; right: 20px;" title="Zapisz do powtórki">
+                        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+                    </div>
+                    
+                    <div class="post-header">
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=100" class="post-avatar">
+                        <div>
+                            <div class="post-author">Fundacja EkoŚwiat <span class="verified-badge" style="width:14px; height:14px;"><svg viewBox="0 0 24 24" style="width:8px; height:8px;"><polyline points="20 6 9 17 4 12"></polyline></svg></span></div>
+                            <div class="post-date">3 godziny temu</div>
+                        </div>
+                    </div>
+                    
+                    <div class="post-content">Cześć! ⚡ Już JUTRO o 18:00 wrzucamy zupełnie nowy, potężny materiał o anomaliach pogodowych i El Niño! 🌪️
+
+Opracowanie zajęło nam miesiąc, więc upewnijcie się, że macie włączone powiadomienia. Kto będzie oglądał?</div>
+                    
+                    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button class="btn-gradient" onclick="window.location.href='youtube.html'">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            Zobacz zwiastun odcinka
+                        </button>
+                        <button class="btn-muted" onclick="showToast('⏰ Przypomnienie ustawione!');">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                            Ustaw przypomnienie
+                        </button>
+                    </div>
+                    
+                    
+                    <div class="post-actions">
+                        <button class="post-action-btn" onclick="likePost(this)"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg> 1.2 tys.</button>
+                        <button class="post-action-btn" onclick="toggleComments(this)"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg> Komentarze (1)</button>
+                    </div>
+
+                    <div class="comments-section-wrapper">
+                        <div class="comments-list">
+                            <div class="comment-item">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                                <div class="comment-bubble">
+                                    <strong>Kamil W.</strong> <span style="color: var(--text-muted); font-size: 11px; margin-left: 5px;">2 godziny temu</span><br>
+                                    Czekałem na ten temat! Poprzedni odcinek o monsunach świetnie mi pomógł. Będę od razu po premierze.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="comment-input-area">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                            <input type="text" class="comment-input-field" placeholder="Napisz komentarz..." onkeypress="if(event.key === 'Enter') submitComment(this)">
+                            <button class="btn-gradient" style="padding: 6px 15px; font-size: 13px; border-radius: 16px;" onclick="submitComment(this.previousElementSibling)">Wyślij</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-channels" class="content-section">
+            <div class="grid-layout" style="grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));">
+                
+                <div class="similar-channel-card">
+                    <img src="https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=150" class="sim-avatar">
+                    <h3 class="sim-name">BioZiemia</h3>
+                    <p class="sim-subs">89 tys. obserwujących</p>
+                    <button class="btn-glass-pill" onclick="toggleSimChannel(this)">Obserwuj</button>
+                </div>
+
+                <div class="similar-channel-card">
+                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=150" class="sim-avatar">
+                    <h3 class="sim-name">Historia Natury</h3>
+                    <p class="sim-subs">210 tys. obserwujących</p>
+                    <button class="btn-glass-pill" onclick="toggleSimChannel(this)">Obserwuj</button>
+                </div>
+
+                <div class="similar-channel-card">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=150" class="sim-avatar">
+                    <h3 class="sim-name">Geofizyka TV</h3>
+                    <p class="sim-subs">45 tys. obserwujących</p>
+                    <button class="btn-glass-pill" onclick="toggleSimChannel(this)">Obserwuj</button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <div class="toast" id="actionToast">
+        <svg viewBox="0 0 24 24" id="toastIcon"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+        <span id="toastMsg">Akcja wykonana</span>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            showToast(document.body.classList.contains('light-theme') ? "☀️ Tryb jasny włączony" : "🌙 Tryb ciemny włączony");
+        }
+
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.channel-nav-btn').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        function sortVideos() {
+            const select = document.getElementById('videoSortSelect');
+            const sortType = select.options[select.selectedIndex].text;
+            const grid = document.getElementById('videoGrid');
+            const cards = Array.from(grid.children);
+            
+            cards.reverse();
+            grid.innerHTML = '';
+            cards.forEach(card => grid.appendChild(card));
+            
+            showToast(`Sortowanie: ${sortType}`);
+        }
+
+        function filterVideos(btnElement) {
+            document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+            showToast(`Wybrano filtr: ${btnElement.innerText.trim()}`);
+        }
+
+        function toggleBookmark(btnElement) {
+            btnElement.classList.toggle('saved');
+            if (btnElement.classList.contains('saved')) {
+                showToast("🔖 Zapisano do powtórki!");
+            } else {
+                showToast("Usunięto z powtórek.");
+            }
+        }
+
+        function toggleFollow() {
+            const btn = document.getElementById('followBtn');
+            btn.classList.toggle('following');
+            
+            if(btn.classList.contains('following')) {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg> Obserwujesz`;
+                showToast("🎉 Dodano do obserwowanych!");
+            } else {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg> Obserwuj`;
+                showToast("Anulowano obserwację.");
+            }
+        }
+
+        function toggleSimChannel(btn) {
+            btn.classList.toggle('following');
+            if(btn.classList.contains('following')) {
+                btn.innerHTML = `Obserwujesz`;
+                btn.style.background = "var(--text-main)";
+                btn.style.color = "var(--bg-dark)";
+                showToast("🎉 Zaczęto obserwować kanał!");
+            } else {
+                btn.innerHTML = `Obserwuj`;
+                btn.style.background = "";
+                btn.style.color = "";
+                showToast("Anulowano obserwację.");
+            }
+        }
+
+        function revealFlashcard(btn) {
+            const answerArea = btn.parentElement;
+            answerArea.classList.add('revealed');
+        }
+
+        function likePost(btn) {
+            btn.style.color = "var(--accent-color)";
+            showToast("❤️ Polubiono post!");
+        }
+
+        function toggleComments(btn) {
+            const postCard = btn.closest('.post-card');
+            const commentsSection = postCard.querySelector('.comments-section-wrapper');
+            if (commentsSection.style.display === "block") {
+                commentsSection.style.display = "none";
+            } else {
+                commentsSection.style.display = "block";
+            }
+        }
+
+        function submitComment(inputElement) {
+            const text = inputElement.value.trim();
+            if (text === '') return;
+
+            const commentsList = inputElement.closest('.comments-section-wrapper').querySelector('.comments-list');
+            const newCommentHTML = `
+                <div class="comment-item" style="animation: fadeIn 0.3s ease;">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100" class="post-avatar" style="width: 32px; height: 32px;">
+                    <div class="comment-bubble">
+                        <strong>Michał D. (Ty)</strong> <span style="color: var(--text-muted); font-size: 11px; margin-left: 5px;">przed chwilą</span><br>
+                        ${text}
+                    </div>
+                </div>
+            `;
+            
+            commentsList.insertAdjacentHTML('beforeend', newCommentHTML);
+            inputElement.value = '';
+            showToast("💬 Dodano komentarz!");
+        }
+
+        let toastTimer;
+        function showToast(message) {
+            const toast = document.getElementById('actionToast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.classList.remove('show'); }, 3000);
+        }
+    </script>
+</body>
+</html>
