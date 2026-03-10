@@ -26,6 +26,35 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
         /* =========================================================
+           PRELOADER (EKRAN ŁADOWANIA)
+           ========================================================= */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            background-color: #000000;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s ease-in-out;
+        }
+        
+        .loader-spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        body.loaded #page-loader {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* =========================================================
            STICKY NAVBAR I STRZAŁKA POWROTU
            ========================================================= */
         .navbar {
@@ -127,15 +156,22 @@
         .user-profile-link:hover .settings-icon { transform: rotate(90deg); opacity: 1; }
 
         /* =========================================================
-           WIDEO W TLE
+           WIDEO W TLE (ZAKTUALIZOWANE DLA VIMEO)
            ========================================================= */
         .video-background { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000000; }
-        .video-background video { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* Centrowanie i skalowanie iframe Vimeo, by działał jak cover */
+        .video-background iframe {
+            width: 100vw; height: 56.25vw; /* Proporcje 16:9 */
+            min-height: 100vh; min-width: 177.77vh; 
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none; border: none;
+        }
+
         #bg-video-2 { z-index: 0; }
-        #bg-video-2 video { width: 104%; margin-left: -4%; }
         #bg-video-1 { z-index: 1; opacity: var(--v1-opacity); transform: scale(var(--v-scale)); filter: blur(var(--v-blur)); will-change: opacity, transform, filter; }
         .video-overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.6); z-index: 2; pointer-events: none; }
-
         /* =========================================================
            GŁÓWNY KONTENER
            ========================================================= */
@@ -401,6 +437,10 @@
 </head>
 <body>
 
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
     <header class="navbar" id="main-nav">
         <div class="nav-left">
             <a href="#" onclick="window.history.back(); return false;" class="nav-back-btn" title="Wróć do poprzedniej strony">
@@ -488,16 +528,15 @@
         </button>
     </div>
 
-    <div class="video-background" id="bg-video-2">
-        <video src="mars2.mp4" autoplay loop muted playsinline></video>
+<div class="video-background" id="bg-video-2">
+        <iframe src="https://player.vimeo.com/video/1171987608?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
         <div class="video-overlay"></div>
     </div>
 
     <div class="video-background" id="bg-video-1">
-        <video src="mars.mp4" autoplay loop muted playsinline></video>
+        <iframe src="https://player.vimeo.com/video/1171987107?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
         <div class="video-overlay"></div>
     </div>
-
     <div class="main-content">
         
         <section class="hero-section">
@@ -1014,6 +1053,14 @@
     </section>
 
     <script>
+        // Ukryj preloader, gdy cała strona (w tym Vimeo) się załaduje
+        window.addEventListener('load', () => {
+            // 1 sekunda opóźnienia, żeby wideo miało czas płynnie ruszyć
+            setTimeout(() => {
+                document.body.classList.add('loaded');
+            }, 1000); 
+        });
+
         // Logika Sticky Navbar
         const mainNav = document.getElementById('main-nav');
         window.addEventListener('scroll', () => {
